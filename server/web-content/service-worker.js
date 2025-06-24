@@ -16,45 +16,39 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 self.addEventListener('push', function(event) {
-  console.log('Received a push message', event);
+  const { title, body } = event.data.json();
 
   // Display notification or handle data
   // Example: show a notification
-  const title = 'New Notification';
-  const body = event.data.text();
-  const icon = '/images/icon.png';
-  const tag = 'simple-push-demo-notification-tag';
+  // const title = 'New Notification';
+  // const body = event.data.text();
+  // const icon = '/images/icon.png';
+  // const tag = 'simple-push-demo-notification-tag';
 
-  event.waitUntil(
-    self.registration.showNotification(title, {
-      body: body,
-      icon: icon,
-      tag: tag
-    })
-  );
+  event.waitUntil(self.registration.showNotification(title, { body }));
 
   // Attempt to resubscribe after receiving a notification
-  event.waitUntil(resubscribeToPush());
+  // event.waitUntil(resubscribeToPush());
 });
 
-function resubscribeToPush() {
-  return self.registration.pushManager.getSubscription()
-    .then(function(subscription) {
-      if (subscription) {
-        return subscription.unsubscribe();
-      }
-    })
-    .then(function() {
-      return self.registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(PUBKEY)
-      });
-    })
-    .then(function(subscription) {
-      console.log('Resubscribed to push notifications:', subscription);
-      // Optionally, send new subscription details to your server
-    })
-    .catch(function(error) {
-      console.error('Failed to resubscribe:', error);
-    });
-}
+// function resubscribeToPush() {
+//   return self.registration.pushManager.getSubscription()
+//     .then(function(subscription) {
+//       if (subscription) {
+//         return subscription.unsubscribe();
+//       }
+//     })
+//     .then(function() {
+//       return self.registration.pushManager.subscribe({
+//         userVisibleOnly: true,
+//         applicationServerKey: urlBase64ToUint8Array(PUBKEY)
+//       });
+//     })
+//     .then(function(subscription) {
+//       console.log('Resubscribed to push notifications:', subscription);
+//       // Optionally, send new subscription details to your server
+//     })
+//     .catch(function(error) {
+//       console.error('Failed to resubscribe:', error);
+//     });
+// }

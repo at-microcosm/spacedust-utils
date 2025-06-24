@@ -7,6 +7,7 @@
 
 hiiiiii
 
+<label><input id="did" placeholder="did:plc:..." /> DID</label>
 <button id="subscribe">subscribe</button>
 
 <p id="error-message"></p>
@@ -16,6 +17,9 @@ hiiiiii
 const err = m => {
   document.getElementById('error-message').textContent = m;
   throw new Error(m);
+};
+const clearErr = () => {
+  document.getElementById('error-message').textContent = '';
 };
 
 if (!('serviceWorker' in navigator)) err('service worker not supported');
@@ -86,18 +90,45 @@ function subscribeUserToPush() {
 }
 
 document.getElementById('subscribe').addEventListener('click', async () => {
-  const perm = await askPermission();
-  console.log({ perm });
-  const sub = await subscribeUserToPush();
-  console.log({ sub });
-  const res = await fetch('/subscribe', {
-    method: 'POST',
-    body: JSON.stringify(sub),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-  console.log('res', res);
+  clearErr();
+
+  const did = document.getElementById('did').value;
+  if (!did.startsWith('did:')) err('should start with `did:`');
+
+  let perm;
+  try {
+    perm = await askPermission();
+  } catch (err) {
+    console.error(err);
+    err('notification permissions are needed to give you notifications');
+  }
+
+  let sub;
+  try {
+    sub = await subscribeUserToPush();
+  } catch (err) {
+    console.error(err);
+    err('failed to subscribe for notification');
+  }
+
+  let res;
+  try {
+    res = await fetch('/subscribe', {
+      method: 'POST',
+      body: JSON.stringify({ did, sub }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    err('failed to create subscription with backend');
+  }
+
+  if (!res.ok) {
+    console.error(await res.text());
+    err('not-ok response trying to create backend subscription');
+  }
 });
 
 </script>

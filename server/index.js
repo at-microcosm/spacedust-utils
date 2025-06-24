@@ -49,19 +49,40 @@ const handleServiceWorker = handleFile('service-worker.js', 'application/javascr
 
 const handleSubscribe = async (req, res) => {
   const body = await getRequesBody(req);
-  console.log('got body', body);
-  doStuff(JSON.parse(body));
+  const { did, sub } = JSON.parse(body);
+  doStuff(did, sub);
   res.setHeader('Content-Type', 'application/json');
   res.writeHead(201);
   res.end('{"oh": "hi"}');
 }
 
-const doStuff = sub => {
-  let n = 0;
-  setInterval(() => {
-    webpush.sendNotification(sub, `oh hi: ${n}`);
-    n += 1;
-  }, 2000);
+const doStuff = (did, sub) => {
+  console.log('subscribing for', did);
+  const ws = new WebSocket(`wss://spacedust.microcosm.blue/subscribe?instant=true&wantedSubjectDids=${did}`);
+
+  ws.addEventListener('message', event => {
+    console.log('got', event.data);
+    let data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (err) {
+      console.error(err);
+      return;
+    }
+    const { link: { source,  source_record } } = data;
+    const title = `new ${source}`;
+    const body = `from ${source_record}`;
+    webpush.sendNotification(sub, JSON.stringify({ title, body }));
+  });
+
+  ws.addEventListener('error', err => {
+    console.log('uh oh', err);
+  });
+
+  ws.addEventListener('close', () => {
+    console.log('closed. bye!');
+  });
+
 }
 
 const requestListener = pubkey => (req, res) => {
