@@ -1,8 +1,124 @@
 #!/usr/bin/env node
+"use strict";
 
 const webpush = require('web-push');
 const fs = require('node:fs');
 const http = require('http');
+
+const DUMMY_DID = 'did:plc:zzzzzzzzzzzzzzzzzzzzzzzz';
+
+let spacedust;
+let spacedustEverStarted = false;
+const subs = new Map();
+
+const addSub = (did, sub) => {
+  if (!subs.has(did)) {
+    subs.set(did, []);
+  }
+  subs.get(did).push(sub);
+  updateSubs();
+};
+
+const updateSubs = () => {
+  if (!spacedust) {
+    console.warn('not updating subscription, no spacedust (reconnecting?)');
+    return;
+  }
+  const wantedSubjectDids = Array.from(subs.keys());
+  if (wantedSubjectDids.length === 0) {
+    wantedSubjectDids.push(DUMMY_DID);
+  }
+  console.log('updating for wantedSubjectDids', wantedSubjectDids);
+  spacedust.send(JSON.stringify({
+    type: 'options_update',
+    payload: {
+      wantedSubjectDids,
+    },
+  }));
+};
+
+const handleDust = async event => {
+  console.log('got', event.data);
+  let data;
+  try {
+    data = JSON.parse(event.data);
+  } catch (err) {
+    console.error(err);
+    return;
+  }
+  const { link: { subject, source, source_record } } = data;
+
+  let did;
+  if (subject.startsWith('did:')) did = subject;
+  else if (subject.startsWith('at://')) {
+    const [id, ..._] = subject.slice('at://'.length).split('/');
+    if (id.startsWith('did:')) did = id;
+  }
+  if (!did) {
+    console.warn(`ignoring link with non-DID subject: ${subject}`)
+    return;
+  }
+
+  const expiredSubs = [];
+  for (const sub of subs.get(did) ?? []) {
+    const title = `new ${source}`;
+    const body = `from ${source_record}`;
+    try {
+      await webpush.sendNotification(sub, JSON.stringify({ title, body }));
+    } catch (err) {
+      if (400 <= err.statusCode && err.statusCode < 500) {
+        expiredSubs.push(sub);
+        console.info(`removing sub for ${err.statusCode}`);
+      }
+    }
+  }
+  if (expiredSubs.length > 0) {
+    const activeSubs = subs.get(did)?.filter(s => !expiredSubs.includes(s));
+    if (!activeSubs) { // concurrently removed already
+      return;
+    }
+    if (activeSubs.length === 0) {
+      console.info('removed last subscriber for', did);
+      subs.delete(did);
+      updateSubs();
+    } else {
+      subs.set(did, activeSubs);
+    }
+  }
+};
+
+const connectSpacedust = host => {
+  spacedust = new WebSocket(`${host}/subscribe?instant=true&wantedSubjectDids=${DUMMY_DID}`);
+  let restarting = false;
+
+  const restart = () => {
+    if (restarting) return;
+    restarting = true;
+    let wait = Math.round(500 + (Math.random() * 1000));
+    console.info(`restarting spacedust connection in ${wait}ms...`);
+    setTimeout(() => connectSpacedust(host), wait);
+    spacedust = null;
+  }
+
+  spacedust.onopen = updateSubs
+  spacedust.onmessage = handleDust;
+
+  spacedust.onerror = e => {
+    console.error('spacedust errored:', e);
+    restart();
+  };
+
+  spacedust.onclose = () => {
+    console.log('spacedust closed');
+    restart();
+  };
+}
+
+const subscribeSpacedust = (did, sub) => {
+  if (!subs.has(did)) {
+    subs.set(did, []);
+  }
+}
 
 const getOrCreateKeys = filename => {
   let keys;
@@ -50,39 +166,10 @@ const handleServiceWorker = handleFile('service-worker.js', 'application/javascr
 const handleSubscribe = async (req, res) => {
   const body = await getRequesBody(req);
   const { did, sub } = JSON.parse(body);
-  doStuff(did, sub);
+  addSub(did, sub);
   res.setHeader('Content-Type', 'application/json');
   res.writeHead(201);
   res.end('{"oh": "hi"}');
-}
-
-const doStuff = (did, sub) => {
-  console.log('subscribing for', did);
-  const ws = new WebSocket(`wss://spacedust.microcosm.blue/subscribe?instant=true&wantedSubjectDids=${did}`);
-
-  ws.addEventListener('message', event => {
-    console.log('got', event.data);
-    let data;
-    try {
-      data = JSON.parse(event.data);
-    } catch (err) {
-      console.error(err);
-      return;
-    }
-    const { link: { source,  source_record } } = data;
-    const title = `new ${source}`;
-    const body = `from ${source_record}`;
-    webpush.sendNotification(sub, JSON.stringify({ title, body }));
-  });
-
-  ws.addEventListener('error', err => {
-    console.log('uh oh', err);
-  });
-
-  ws.addEventListener('close', () => {
-    console.log('closed. bye!');
-  });
-
 }
 
 const requestListener = pubkey => (req, res) => {
@@ -108,8 +195,11 @@ const main = env => {
     keys.privateKey,
   );
 
-  const host = env.HOST || 'localhost';
-  const port = parseInt(env.PORT || 8000, 10);
+  const spacedustHost = env.SPACEDUST_HOST ?? 'wss://spacedust.microcosm.blue';
+  connectSpacedust(spacedustHost);
+
+  const host = env.HOST ?? 'localhost';
+  const port = parseInt(env.PORT ?? 8000, 10);
 
   http
     .createServer(requestListener(keys.publicKey))
