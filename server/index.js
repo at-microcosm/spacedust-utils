@@ -114,12 +114,6 @@ const connectSpacedust = host => {
   };
 }
 
-const subscribeSpacedust = (did, sub) => {
-  if (!subs.has(did)) {
-    subs.set(did, []);
-  }
-}
-
 const getOrCreateKeys = filename => {
   let keys;
   try {

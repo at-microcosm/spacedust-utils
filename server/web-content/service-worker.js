@@ -1,5 +1,3 @@
-console.log('hello????');
-
 function urlBase64ToUint8Array(base64String) {
     var padding = '='.repeat((4 - base64String.length % 4) % 4);
     var base64 = (base64String + padding)
@@ -27,28 +25,5 @@ self.addEventListener('push', function(event) {
 
   event.waitUntil(self.registration.showNotification(title, { body }));
 
-  // Attempt to resubscribe after receiving a notification
-  // event.waitUntil(resubscribeToPush());
+  // TODO: resubscribe to notifs to try to stay alive
 });
-
-// function resubscribeToPush() {
-//   return self.registration.pushManager.getSubscription()
-//     .then(function(subscription) {
-//       if (subscription) {
-//         return subscription.unsubscribe();
-//       }
-//     })
-//     .then(function() {
-//       return self.registration.pushManager.subscribe({
-//         userVisibleOnly: true,
-//         applicationServerKey: urlBase64ToUint8Array(PUBKEY)
-//       });
-//     })
-//     .then(function(subscription) {
-//       console.log('Resubscribed to push notifications:', subscription);
-//       // Optionally, send new subscription details to your server
-//     })
-//     .catch(function(error) {
-//       console.error('Failed to resubscribe:', error);
-//     });
-// }
