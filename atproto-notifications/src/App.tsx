@@ -13,7 +13,7 @@ function App() {
 
       {user === null
         ? (
-          <WhoAmI onSetUser={setUser} />
+          <WhoAmI onIdentify={setUser} />
         )
         : (
           <>
