@@ -1,6 +1,6 @@
 import { useLocalStorage } from "@uidotdev/usehooks";
 import { HostContext } from './context'
-import { Hello } from './components/Hello';
+import { WhoAmI } from './components/WhoAmI';
 import './App.css'
 
 function App() {
@@ -11,9 +11,16 @@ function App() {
     <HostContext.Provider value={host}>
       <h1>🎇 atproto notifications demo</h1>
 
-      {user === null && (
-        <Hello onSetUser={setUser} />
-      )}
+      {user === null
+        ? (
+          <WhoAmI onSetUser={setUser} />
+        )
+        : (
+          <>
+            <p>hi {user.handle}</p>
+            <button onClick={() => setUser(null)}>clear</button>
+          </>
+        )}
     </HostContext.Provider>
   )
 }
