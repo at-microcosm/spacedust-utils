@@ -146,6 +146,25 @@ const getRequesBody = async req => new Promise((resolve, reject) => {
   req.on('error', err => reject(err));
 });
 
+const COOKIE_BASE = { httpOnly: true, secure: true, partitioned: true, sameSite: 'None' };
+const setDidCookie = (res, did, appSecret) => res.setHeader('Set-Cookie', cookie.serialize(
+  'verified-did',
+  cookieSig.sign(did, appSecret),
+  { ...COOKIE_BASE, maxAge: 90 * 86_400 },
+));
+const clearDidCookie = res => res.setHeader('Set-Cookie', cookie.serialize(
+  'verified-did',
+  '',
+  { ...COOKIE_BASE, expires: new Date(0) },
+));
+const getDidCookie = (req, res, appSecret) => {
+  const cookies = cookie.parse(req.headers.cookie ?? '');
+  const untrusted = cookies['verified-did'] ?? '';
+  const did = cookieSig.unsign(untrusted, appSecret);
+  if (!did) clearDidCookie(res);
+  return did;
+};
+
 const handleFile = (fname, ftype) => async (req, res, replace = {}) => {
   let content
   try {
@@ -175,30 +194,19 @@ const handleVerify = async (req, res, jwks, appSecret) => {
     const verified = await jose.jwtVerify(token, jwks);
     did = verified.payload.sub;
   } catch (e) {
-    res.setHeader('Set-Cookie', cookie.serialize('verified-did', '', { expires: new Date(0) }));
-    return res.writeHead(400).end(JSON.stringify({ reason: 'verification failed' }));
+    return clearDidCookie(res).writeHead(400).end(JSON.stringify({ reason: 'verification failed' }));
   }
-  const signed = cookieSig.sign(did, appSecret);
-  res.setHeader('Set-Cookie', cookie.serialize('verified-did', signed, {
-    httpOnly: true,
-    secure: true,
-    maxAge: 90 * 86_400,
-  }))
+  setDidCookie(res, did, appSecret);
   return res.writeHead(200).end('okayyyy');
 };
 
 const handleSubscribe = async (req, res, appSecret) => {
-  const rawCookies = req.headers.cookie;
-  const cookies = cookie.parse(req.headers.cookie ?? '');
-  const untrusted = cookies['verified-did'] ?? '';
-  const did = cookieSig.unsign(untrusted, appSecret);
-  if (!did) {
-    res.setHeader('Set-Cookie', cookie.serialize('verified-did', '', { expires: new Date(0) }));
-    return res.writeHead(400).end(JSON.stringify({ reason: 'failed to verify cookie signature' }));
-  }
+  let did = getDidCookie(req, res, appSecret);
+  if (!did) return res.writeHead(400).end(JSON.stringify({ reason: 'failed to verify cookie signature' }));
+
   const body = await getRequesBody(req);
   const { sub } = JSON.parse(body);
-  addSub('did:plc:z72i7hdynmk6r22z27h6tvur', sub); // DELETEME @bsky.app (DEBUG)
+  // addSub('did:plc:z72i7hdynmk6r22z27h6tvur', sub); // DELETEME @bsky.app (DEBUG)
   addSub(did, sub);
   res.setHeader('Content-Type', 'application/json');
   res.writeHead(201);
