@@ -1,11 +1,20 @@
 #!/usr/bin/env node
 "use strict";
 
-const webpush = require('web-push');
 const fs = require('node:fs');
 const http = require('http');
+const jose = require('jose');
+const cookie = require('cookie');
+const cookieSig = require('cookie-signature');
+const webpush = require('web-push');
 
 const DUMMY_DID = 'did:plc:zzzzzzzzzzzzzzzzzzzzzzzz';
+
+const CORS_PERMISSIVE = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'OPTIONS, GET, POST',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
 let spacedust;
 let spacedustEverStarted = false;
@@ -157,6 +166,26 @@ const handleFile = (fname, ftype) => async (req, res, replace = {}) => {
 const handleIndex = handleFile('index.html', 'text/html');
 const handleServiceWorker = handleFile('service-worker.js', 'application/javascript');
 
+const handleVerify = async (req, res, jwks, app_secret) => {
+  const body = await getRequesBody(req);
+  const { token } = JSON.parse(body);
+  let did;
+  try {
+    const verified = await jose.jwtVerify(token, jwks);
+    did = verified.payload.sub;
+  } catch (e) {
+    res.setHeader('Set-Cookie', cookie.serialize('verified-did', '', { expires: new Date(0) }));
+    return res.writeHead(400).end(JSON.stringify({ reason: 'verification failed' }));
+  }
+  const signed = cookieSig.sign(did, app_secret);
+  res.setHeader('Set-Cookie', cookie.serialize('verified-did', signed, {
+    httpOnly: true,
+    secure: true,
+    maxAge: 90 * 86_400,
+  }))
+  return res.writeHead(200).end('okayyyy');
+};
+
 const handleSubscribe = async (req, res) => {
   const body = await getRequesBody(req);
   const { did, sub } = JSON.parse(body);
@@ -164,17 +193,28 @@ const handleSubscribe = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.writeHead(201);
   res.end('{"oh": "hi"}');
-}
+};
 
-const requestListener = pubkey => (req, res) => {
-  if (req.method === 'GET' && req.url === '/')
+const requestListener = (pubkey, jwks, app_secret) => (req, res) => {
+  if (req.method === 'GET' && req.url === '/') {
     return handleIndex(req, res, { PUBKEY: pubkey });
-
-  if (req.method === 'GET' && req.url === '/service-worker.js')
+  }
+  if (req.method === 'GET' && req.url === '/service-worker.js') {
     return handleServiceWorker(req, res, { PUBKEY: pubkey });
+  }
 
-  if (req.method === 'POST' && req.url === '/subscribe')
+  if (req.method === 'OPTIONS' && req.url === '/verify') {
+    // TODO: probably restrict the origin
+    return res.writeHead(204, CORS_PERMISSIVE).end();
+  }
+  if (req.method === 'POST' && req.url === '/verify') {
+    res.setHeaders(new Headers(CORS_PERMISSIVE));
+    return handleVerify(req, res, jwks, app_secret);
+  }
+
+  if (req.method === 'POST' && req.url === '/subscribe') {
     return handleSubscribe(req, res);
+  }
 
   res.writeHead(200);
   res.end('sup');
@@ -189,6 +229,12 @@ const main = env => {
     keys.privateKey,
   );
 
+  if (!env.APP_SECRET) throw new Error('APP_SECRET is required to run');
+  const app_secret = env.APP_SECRET;
+
+  const whoamiHost = env.WHOAMI_HOST ?? 'https://who-am-i.microcosm.blue';
+  const jwks = jose.createRemoteJWKSet(new URL(`${whoamiHost}/.well-known/jwks.json`));
+
   const spacedustHost = env.SPACEDUST_HOST ?? 'wss://spacedust.microcosm.blue';
   connectSpacedust(spacedustHost);
 
@@ -196,7 +242,7 @@ const main = env => {
   const port = parseInt(env.PORT ?? 8000, 10);
 
   http
-    .createServer(requestListener(keys.publicKey))
+    .createServer(requestListener(keys.publicKey, jwks, app_secret))
     .listen(port, host, () => console.log(`listening at http://${host}:${port}`));
 };
 

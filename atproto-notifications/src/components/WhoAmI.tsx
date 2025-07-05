@@ -25,6 +25,7 @@ export function WhoAmI({ onIdentify, origin = 'http://127.0.0.1:9997' }) {
         border: 'none',
         display: 'block',
         colorScheme: 'none',
+        margin: '0 auto',
       }}
     >
       Ooops, failed to load the login helper
