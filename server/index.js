@@ -10,11 +10,12 @@ const webpush = require('web-push');
 
 const DUMMY_DID = 'did:plc:zzzzzzzzzzzzzzzzzzzzzzzz';
 
-const CORS_PERMISSIVE = {
-  'Access-Control-Allow-Origin': '*',
+const CORS_PERMISSIVE = req => ({
+  'Access-Control-Allow-Origin': req.headers.origin, // DANGERRRRR
   'Access-Control-Allow-Methods': 'OPTIONS, GET, POST',
   'Access-Control-Allow-Headers': 'Content-Type',
-};
+  'Access-Control-Allow-Credentials': 'true', // TODO: *def* want to restrict allowed origin, probably
+});
 
 let spacedust;
 let spacedustEverStarted = false;
@@ -166,7 +167,7 @@ const handleFile = (fname, ftype) => async (req, res, replace = {}) => {
 const handleIndex = handleFile('index.html', 'text/html');
 const handleServiceWorker = handleFile('service-worker.js', 'application/javascript');
 
-const handleVerify = async (req, res, jwks, app_secret) => {
+const handleVerify = async (req, res, jwks, appSecret) => {
   const body = await getRequesBody(req);
   const { token } = JSON.parse(body);
   let did;
@@ -177,7 +178,7 @@ const handleVerify = async (req, res, jwks, app_secret) => {
     res.setHeader('Set-Cookie', cookie.serialize('verified-did', '', { expires: new Date(0) }));
     return res.writeHead(400).end(JSON.stringify({ reason: 'verification failed' }));
   }
-  const signed = cookieSig.sign(did, app_secret);
+  const signed = cookieSig.sign(did, appSecret);
   res.setHeader('Set-Cookie', cookie.serialize('verified-did', signed, {
     httpOnly: true,
     secure: true,
@@ -186,16 +187,25 @@ const handleVerify = async (req, res, jwks, app_secret) => {
   return res.writeHead(200).end('okayyyy');
 };
 
-const handleSubscribe = async (req, res) => {
+const handleSubscribe = async (req, res, appSecret) => {
+  const rawCookies = req.headers.cookie;
+  const cookies = cookie.parse(req.headers.cookie ?? '');
+  const untrusted = cookies['verified-did'] ?? '';
+  const did = cookieSig.unsign(untrusted, appSecret);
+  if (!did) {
+    res.setHeader('Set-Cookie', cookie.serialize('verified-did', '', { expires: new Date(0) }));
+    return res.writeHead(400).end(JSON.stringify({ reason: 'failed to verify cookie signature' }));
+  }
   const body = await getRequesBody(req);
-  const { did, sub } = JSON.parse(body);
+  const { sub } = JSON.parse(body);
+  addSub('did:plc:z72i7hdynmk6r22z27h6tvur', sub); // DELETEME @bsky.app (DEBUG)
   addSub(did, sub);
   res.setHeader('Content-Type', 'application/json');
   res.writeHead(201);
   res.end('{"oh": "hi"}');
 };
 
-const requestListener = (pubkey, jwks, app_secret) => (req, res) => {
+const requestListener = (pubkey, jwks, appSecret) => (req, res) => {
   if (req.method === 'GET' && req.url === '/') {
     return handleIndex(req, res, { PUBKEY: pubkey });
   }
@@ -205,15 +215,20 @@ const requestListener = (pubkey, jwks, app_secret) => (req, res) => {
 
   if (req.method === 'OPTIONS' && req.url === '/verify') {
     // TODO: probably restrict the origin
-    return res.writeHead(204, CORS_PERMISSIVE).end();
+    return res.writeHead(204, CORS_PERMISSIVE(req)).end();
   }
   if (req.method === 'POST' && req.url === '/verify') {
-    res.setHeaders(new Headers(CORS_PERMISSIVE));
-    return handleVerify(req, res, jwks, app_secret);
+    res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
+    return handleVerify(req, res, jwks, appSecret);
   }
 
+  if (req.method === 'OPTIONS' && req.url === '/subscribe') {
+    // TODO: probably restrict the origin
+    return res.writeHead(204, CORS_PERMISSIVE(req)).end();
+  }
   if (req.method === 'POST' && req.url === '/subscribe') {
-    return handleSubscribe(req, res);
+    res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
+    return handleSubscribe(req, res, appSecret);
   }
 
   res.writeHead(200);
@@ -230,7 +245,7 @@ const main = env => {
   );
 
   if (!env.APP_SECRET) throw new Error('APP_SECRET is required to run');
-  const app_secret = env.APP_SECRET;
+  const appSecret = env.APP_SECRET;
 
   const whoamiHost = env.WHOAMI_HOST ?? 'https://who-am-i.microcosm.blue';
   const jwks = jose.createRemoteJWKSet(new URL(`${whoamiHost}/.well-known/jwks.json`));
@@ -242,7 +257,7 @@ const main = env => {
   const port = parseInt(env.PORT ?? 8000, 10);
 
   http
-    .createServer(requestListener(keys.publicKey, jwks, app_secret))
+    .createServer(requestListener(keys.publicKey, jwks, appSecret))
     .listen(port, host, () => console.log(`listening at http://${host}:${port}`));
 };
 

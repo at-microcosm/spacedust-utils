@@ -11,19 +11,25 @@ const Problem = ({ children }) => (
   </div>
 );
 
-function requestPermission(setAsking) {
+function requestPermission(host, setAsking) {
   return async () => {
     setAsking(true);
     let err;
     try {
       await Notification.requestPermission();
-      await subscribeToPush();
+      const sub = await subscribeToPush();
+      const res = await fetch(`${host}/subscribe`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ sub }),
+        credentials: 'include',
+      });
+      if (!res.ok) throw res;
     } catch (e) {
       err = e;
     }
     setAsking(false);
     if (err) throw err;
-
   }
 }
 
@@ -35,6 +41,7 @@ async function subscribeToPush() {
   };
   const pushSubscription = await registration.pushManager.subscribe(subscribeOptions);
   console.log({ pushSubscription });
+  return pushSubscription;
 }
 
 async function verifyUser(host, token) {
@@ -42,6 +49,7 @@ async function verifyUser(host, token) {
     method: 'POST',
     headers: {'Content-Type': 'applicaiton/json'},
     body: JSON.stringify({ token }),
+    credentials: 'include',
   });
   if (!res.ok) throw res;
 }
@@ -92,7 +100,7 @@ function App() {
         <p>To show atproto notifications we need permission:</p>
         <p>
           <button
-            onClick={requestPermission(setAsking)}
+            onClick={requestPermission(host, setAsking)}
             disabled={asking}
           >
             {asking ? <>Requesting&hellip;</> : <>Request permission</>}
