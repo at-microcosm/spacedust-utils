@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useLocalStorage } from "@uidotdev/usehooks";
 import { HostContext } from './context'
 import { WhoAmI } from './components/WhoAmI';
+import { Feed } from './components/Feed';
 import { urlBase64ToUint8Array } from './utils';
 import './App.css'
 
@@ -120,6 +121,7 @@ function App() {
           @{user.handle}
           <button onClick={() => setUser(null)}>&times;</button>
         </p>
+        <Feed />
       </>
     );
   }

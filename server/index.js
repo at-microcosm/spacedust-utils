@@ -70,11 +70,8 @@ const handleDust = async event => {
   }
 
   const expiredSubs = [];
-  for (const sub of subs.get(did) ?? []) {
-    const title = `new ${source}`;
-    const body = `from ${source_record}`;
-    try {
-      await webpush.sendNotification(sub, JSON.stringify({ title, body }));
+  for (const sub of subs.get(did) ?? []) {    try {
+      await webpush.sendNotification(sub, JSON.stringify({ subject, source, source_record }));
     } catch (err) {
       if (400 <= err.statusCode && err.statusCode < 500) {
         expiredSubs.push(sub);
@@ -206,7 +203,7 @@ const handleSubscribe = async (req, res, appSecret) => {
 
   const body = await getRequesBody(req);
   const { sub } = JSON.parse(body);
-  // addSub('did:plc:z72i7hdynmk6r22z27h6tvur', sub); // DELETEME @bsky.app (DEBUG)
+  addSub('did:plc:z72i7hdynmk6r22z27h6tvur', sub); // DELETEME @bsky.app (DEBUG)
   addSub(did, sub);
   res.setHeader('Content-Type', 'application/json');
   res.writeHead(201);
