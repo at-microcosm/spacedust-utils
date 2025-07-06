@@ -1,4 +1,5 @@
 self.addEventListener('push', handlePush);
+self.addEventListener('notificationclick', handleNotificationClick);
 
 const getDB = ((upgrade, v) => {
   let instance;
@@ -31,8 +32,8 @@ const push = async notif => {
   });
 };
 
-async function handlePush(event) {
-  const { subject, source, source_record } = event.data.json();
+async function handlePush(ev) {
+  const { subject, source, source_record } = ev.data.json();
 
   let icon;
   if (source.startsWith('app.bsky')) icon = '/icons/app.bsky.png';
@@ -64,8 +65,32 @@ async function handlePush(event) {
 
   new BroadcastChannel('notif').postMessage('heyyy');
 
-  event.waitUntil(self.registration.showNotification(title, {
+  const notification = self.registration.showNotification(title, {
     icon,
     body: source_record,
-  }));
+    // actions: [
+    //   {'action': 'bsky', title: 'Bluesky'},
+    //   {'action': 'spacedust', title: 'All notifications'},
+    // ],
+  });
+
+  ev.waitUntil(notification);
+}
+
+function handleNotificationClick(ev) {
+  ev.waitUntil((async () => {
+    ev.notification.close();
+
+    const clientList = await clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true,
+    });
+
+    // focus the first available existing window/tab
+    for (const client of clientList)
+      return await client.focus();
+
+    // otherwise open a new tab
+    await clients.openWindow('/');
+  })());
 }
