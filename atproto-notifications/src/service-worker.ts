@@ -1,3 +1,5 @@
+import { resolveDid } from './atproto/resolve';
+
 self.addEventListener('push', handlePush);
 self.addEventListener('notificationclick', handleNotificationClick);
 
@@ -43,6 +45,16 @@ async function handlePush(ev) {
     'app.bsky.feed.like:subject.uri': 'New like 💜',
   }[source] ?? source;
 
+  let handle = 'unknown';
+  if (source_record.startsWith('at://')) {
+    const did = source_record.slice('at://'.length).split('/')[0];
+    try {
+      handle = await resolveDid(did);
+    } catch (err) {
+      console.error('failed to get handle', err);
+    }
+  }
+
   // const tag = 'simple-push-demo-notification-tag';
   // TODO: resubscribe to notifs to try to stay alive
 
@@ -67,7 +79,7 @@ async function handlePush(ev) {
 
   const notification = self.registration.showNotification(title, {
     icon,
-    body: source_record,
+    body: `from ${handle}`,
     // actions: [
     //   {'action': 'bsky', title: 'Bluesky'},
     //   {'action': 'spacedust', title: 'All notifications'},
