@@ -35,7 +35,9 @@ function requestPermission(host, setAsking) {
 }
 
 async function subscribeToPush() {
-  const registration = await navigator.serviceWorker.register('/service-worker.js');
+  const worker_url = new URL('service-worker.ts', import.meta.url);
+  const registration = await navigator.serviceWorker.register(worker_url);
+
   const subscribeOptions = {
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_PUSH_PUBKEY),
