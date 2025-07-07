@@ -100,8 +100,8 @@ function App() {
   } else if (notifPerm !== 'granted') {
     content = (
       <>
-        <h3>Step 2: Notification permission</h3>
-        <p>To show atproto notifications we need permission:</p>
+        <h3>Step 2: Allow notifications</h3>
+        <p>To show notifications we need permission:</p>
         <p>
           <button
             onClick={requestPermission(host, setAsking)}
@@ -111,43 +111,79 @@ function App() {
           </button>
         </p>
         {notifPerm === 'denied' ? (
-          <p><em>Notification permission was denied. You may need to clear the browser setting to try again.</em></p>
+          <p className="detail">Notification permission was denied. You may need to clear the browser setting to try again.</p>
         ) : (
-          <p><em>You can revoke this any time</em></p>
+          <p className="detail">You can revoke this any time</p>
         )}
       </>
     );
   } else {
-    content = (
-      <>
-        <p>
-          @{user.handle}
-          <button onClick={() => setUser(null)}>&times;</button>
-        </p>
-        <Feed />
-      </>
-    );
+    content = <Feed />;
   }
 
   return (
     <HostContext.Provider value={host}>
-      <h1>🎇 atproto notifications demo</h1>
+      <header id="app-header">
+        <h1>spacedust notifications <span className="demo">demo!</span></h1>
+        {user && (
+          <div className="current-user">
+            <p>
+              <span className="handle">@{user.handle}</span>
+              {/* TODO: clear *all* info on logout */}
+              <button className="subtle bad" onClick={() => setUser(null)}>&times;</button>
+            </p>
+          </div>
+        )}
+      </header>
 
-      <p>Get browser push notifications from any app</p>
+      <div id="app-content">
+        {content}
+      </div>
 
-      {content}
+      <div className="footer">
+        <p className="from">
+          This demo is part of
+          {' '}
+          <a href="https://microcosm.blue" className="external" target="_blank">
+            <span style={{ color: '#f396a9' }}>m</span>
+            <span style={{ color: '#f49c5c' }}>i</span>
+            <span style={{ color: '#c7b04c' }}>c</span>
+            <span style={{ color: '#92be4c' }}>r</span>
+            <span style={{ color: '#4ec688' }}>o</span>
+            <span style={{ color: '#51c2b6' }}>c</span>
+            <span style={{ color: '#54bed7' }}>o</span>
+            <span style={{ color: '#8fb1f1' }}>s</span>
+            <span style={{ color: '#ce9df1' }}>m</span>
+
+          </a>
+        </p>
+        <p className="actions">
+          <a href="https://bsky.app/profile/microcosm.blue" target="_blank" className="external">
+            🦋 follow
+          </a>
+          <a href="https://github.com/sponsors/uniphil/" target="_blank" className="external">
+            💸 support
+          </a>
+          <a href="https://github.com/at-microcosm/spacedust-utils" target="_blank" className="external">
+            👩🏻‍💻 source
+          </a>
+        </p>
+
+        <p className="secret-dev">
+          secret dev setting:
+          {' '}
+          <label>
+            <input
+              type="checkbox"
+              onChange={e => setDev(e.target.checked)}
+              checked={true /*isDev(ufosHost)*/}
+            />
+            localhost
+          </label>
+        </p>
+      </div>
     </HostContext.Provider>
   )
 }
 
-export default App
-
-
-      // {user === null ? (
-        
-      // ) : (
-      //   <>
-      //     <p>hi {user.handle}</p>
-      //     <button onClick={() => setUser(null)}>clear</button>
-      //   </>
-      // )}
+export default App;

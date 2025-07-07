@@ -1,14 +1,94 @@
 #root {
-  max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+  max-width: 1280px;
+  padding: 0;
   text-align: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.card {
-  padding: 2em;
+#app-header {
+  background-color: #0b0d0f;
+  padding: 0.25rem;
+  border-bottom: 1px solid hsla(0, 0%, 50%, 0.3);
+  display: flex;
+  justify-content: space-around;
+  align-items: baseline;
 }
 
-.read-the-docs {
+#app-header .handle {
+  display: inline-block;
+  margin-right: 0.5rem;
+  color: #999;
+}
+
+.demo {
+  background: #2c343c;
+  border-radius: 0.25rem;
+  color: #f90;
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: normal;
+  margin: 0 0 0 0.25rem;
+  padding: 0.1rem 0.333rem 0.15rem;
+  transform: rotate(-13deg);
+  vertical-align: top;
+}
+
+#app-content {
+  padding: 0.5rem 1rem;
+}
+
+.detail {
+  font-style: italic;
+  font-size: 0.8rem;
+  max-width: 24em;
+  margin: 0 auto;
+}
+
+.footer {
+  box-sizing: border-box;
+  background: #0b0d0f;
+  width: 100%;
+  text-align: center;
+  margin: 3rem 0 0;
+  padding: 0.667rem 0.5rem 0;
+  font-size: 0.85rem;
+
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  font-weight: normal;
+  line-height: 1.5rem;
+
+  border-top: 1px solid hsla(0, 0%, 50%, 0.3);
+  box-shadow: 0 108px 81px -81px inset #221828;
+
+  color-scheme: dark;
+  color: #e6ece6;
+}
+.footer p {
+  margin: 0;
+}
+.footer p.from {
   color: #888;
+}
+.footer p.actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin: 0.5rem 0;
+}
+.footer p.secret-dev {
+  font-size: 0.667rem;
+}
+.footer p.secret-dev:not(:hover) {
+  opacity: 0.5;
+}
+
+@media screen and (max-width: 600px) {
+  .footer {
+    border-radius: 0;
+    position: relative;
+  }
 }
