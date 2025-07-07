@@ -1,3 +1,4 @@
+import psl from 'psl';
 import { resolveDid } from './atproto/resolve';
 
 self.addEventListener('push', handlePush);
@@ -58,6 +59,18 @@ async function handlePush(ev) {
   // const tag = 'simple-push-demo-notification-tag';
   // TODO: resubscribe to notifs to try to stay alive
 
+  let group;
+  let domain;
+  try {
+    const [nsid, ...rp] = source.split(':');
+    const parts = nsid.split('.');
+    group = parts.slice(0, parts.length - 1).join('.') ?? 'unknown';
+    const unreversed = parts.toReversed().join('.');
+    domain = psl.parse(unreversed)?.domain ?? 'unknown';
+  } catch (e) {
+    console.error('getting top app domain failed', e);
+  }
+
   let db;
   try {
     db = await getDB();
@@ -79,7 +92,7 @@ async function handlePush(ev) {
 
   const notification = self.registration.showNotification(title, {
     icon,
-    body: `from ${handle}`,
+    body: `from ${handle} on ${domain} in ${group}`,
     // actions: [
     //   {'action': 'bsky', title: 'Bluesky'},
     //   {'action': 'spacedust', title: 'All notifications'},
