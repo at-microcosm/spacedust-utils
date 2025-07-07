@@ -1,47 +1,5 @@
 import { useEffect, useState } from 'react';
-
-const getDB = ((upgrade, v) => {
-  let instance;
-  return () => {
-    if (instance) return instance;
-    const req = indexedDB.open('atproto-notifs', v);
-    instance = new Promise((resolve, reject) => {
-      req.onerror = () => reject(req.error);
-      req.onupgradeneeded = () => upgrade(req.result);
-      req.onsuccess = () => resolve(req.result);
-    });
-    return instance;
-  };
-})(function dbUpgrade(db) {
-  try {
-    db.deleteObjectStore('notifs');
-  } catch (e) {}
-  db.createObjectStore('notifs', {
-    key: 'id',
-    autoIncrement: true,
-  });
-}, 2);
-
-const getNotifs = async (limit = 30) => {
-  let res = [];
-  const oc = (await getDB())
-    .transaction(['notifs'])
-    .objectStore('notifs')
-    .openCursor(undefined, 'prev');
-  return new Promise((resolve, reject) => {
-    oc.onerror = () => reject(oc.error);
-    oc.onsuccess = ev => {
-      const cursor = event.target.result;
-      if (cursor) {
-        res.push([cursor.key, cursor.value]);
-        if (res.length < limit) cursor.continue();
-        else resolve(res);
-      } else {
-        resolve(res);
-      }
-    }
-  });
-};
+import { getNotifications } from '../db';
 
 export function Feed() {
 
@@ -58,7 +16,7 @@ export function Feed() {
   // this could be combined with the broadcast thing above, but for now just chain deps
   const [feed, setFeed] = useState([]);
   useEffect(() => {
-    (async () => setFeed((await getNotifs())))();
+    (async () => setFeed((await getNotifications())))();
   }, [inc]);
 
   if (feed.length === 0) {

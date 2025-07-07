@@ -47,5 +47,7 @@ export async function resolveDid(did) {
     throw new Error('empty handle');
   }
 
+  // TODO: do we need to resolve back the other way to verify?
+
   return handle;
 }

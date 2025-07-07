@@ -1,39 +1,9 @@
 import psl from 'psl';
 import { resolveDid } from './atproto/resolve';
+import { insertNotification } from './db';
 
 self.addEventListener('push', handlePush);
 self.addEventListener('notificationclick', handleNotificationClick);
-
-const getDB = ((upgrade, v) => {
-  let instance;
-  return () => {
-    if (instance) return instance;
-    const req = indexedDB.open('atproto-notifs', v);
-    instance = new Promise((resolve, reject) => {
-      req.onerror = () => reject(req.error);
-      req.onupgradeneeded = () => upgrade(req.result);
-      req.onsuccess = () => resolve(req.result);
-    });
-    return instance;
-  };
-})(function dbUpgrade(db) {
-  try {
-    db.deleteObjectStore('notifs');
-  } catch (e) {}
-  db.createObjectStore('notifs', {
-    key: 'id',
-    autoIncrement: true,
-  });
-}, 2);
-
-const push = async notif => {
-  const tx = (await getDB()).transaction('notifs', 'readwrite');
-  return new Promise((resolve, reject) => {
-    tx.oncomplete = resolve;
-    tx.onerror = () => reject(tx.error);
-    tx.objectStore('notifs').put(notif);
-  });
-};
 
 async function handlePush(ev) {
   const { subject, source, source_record } = ev.data.json();
@@ -47,10 +17,11 @@ async function handlePush(ev) {
   }[source] ?? source;
 
   let handle = 'unknown';
+  let source_did;
   if (source_record.startsWith('at://')) {
-    const did = source_record.slice('at://'.length).split('/')[0];
+    source_did = source_record.slice('at://'.length).split('/')[0];
     try {
-      handle = await resolveDid(did);
+      handle = await resolveDid(source_did);
     } catch (err) {
       console.error('failed to get handle', err);
     }
@@ -60,43 +31,35 @@ async function handlePush(ev) {
   // TODO: resubscribe to notifs to try to stay alive
 
   let group;
-  let domain;
+  let app;
   try {
     const [nsid, ...rp] = source.split(':');
     const parts = nsid.split('.');
     group = parts.slice(0, parts.length - 1).join('.') ?? 'unknown';
     const unreversed = parts.toReversed().join('.');
-    domain = psl.parse(unreversed)?.domain ?? 'unknown';
+    app = psl.parse(unreversed)?.domain ?? 'unknown';
   } catch (e) {
-    console.error('getting top app domain failed', e);
+    console.error('getting top app failed', e);
   }
 
-  let db;
   try {
-    db = await getDB();
+    await insertNotification({
+      subject,
+      source_record,
+      source_did,
+      source,
+      group,
+      app,
+    });
   } catch (e) {
     console.error('oh no', e);
-    throw e;
-  }
-  db.onerror = e => {
-    console.error('db errored', e);
-  };
-
-  try {
-    await push({ subject, source, source_record });
-  } catch (e) {
-    console.error('uh oh', e);
   }
 
   new BroadcastChannel('notif').postMessage('heyyy');
 
   const notification = self.registration.showNotification(title, {
     icon,
-    body: `from ${handle} on ${domain} in ${group}`,
-    // actions: [
-    //   {'action': 'bsky', title: 'Bluesky'},
-    //   {'action': 'spacedust', title: 'All notifications'},
-    // ],
+    body: `from @${handle}`,
   });
 
   ev.waitUntil(notification);
