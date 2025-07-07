@@ -1,4 +1,5 @@
 import psl from 'psl';
+import lexicons from 'lexicons';
 import { resolveDid } from './atproto/resolve';
 import { insertNotification } from './db';
 
@@ -7,14 +8,19 @@ self.addEventListener('notificationclick', handleNotificationClick);
 
 async function handlePush(ev) {
   const { subject, source, source_record } = ev.data.json();
-
-  let icon;
-  if (source.startsWith('app.bsky')) icon = '/icons/app.bsky.png';
-
-  let title = {
-    'app.bsky.graph.follow:subject': 'New follow',
-    'app.bsky.feed.like:subject.uri': 'New like 💜',
-  }[source] ?? source;
+  let group;
+  let app;
+  let appPrefix;
+  try {
+    const [nsid, ...rp] = source.split(':');
+    const parts = nsid.split('.');
+    group = parts.slice(0, parts.length - 1).join('.') ?? 'unknown';
+    const unreversed = parts.toReversed().join('.');
+    app = psl.parse(unreversed)?.domain ?? 'unknown';
+    appPrefix = app.split('.').toReversed().join('.');
+  } catch (e) {
+    console.error('getting top app failed', e);
+  }
 
   let handle = 'unknown';
   let source_did;
@@ -27,20 +33,15 @@ async function handlePush(ev) {
     }
   }
 
+  // TODO: user pref for alt client -> prefer that client's icon
+  const lex = lexicons[appPrefix];
+  const icon = lex?.clients[0]?.icon;
+  console.log('app', app, 'lex', lex, lexicons);
+  const title = lex?.known_sources[source.slice(app.length + 1)] ?? source;
+  const body = `from @${handle} on ${lex?.name ?? app}`;
+
   // const tag = 'simple-push-demo-notification-tag';
   // TODO: resubscribe to notifs to try to stay alive
-
-  let group;
-  let app;
-  try {
-    const [nsid, ...rp] = source.split(':');
-    const parts = nsid.split('.');
-    group = parts.slice(0, parts.length - 1).join('.') ?? 'unknown';
-    const unreversed = parts.toReversed().join('.');
-    app = psl.parse(unreversed)?.domain ?? 'unknown';
-  } catch (e) {
-    console.error('getting top app failed', e);
-  }
 
   try {
     await insertNotification({
@@ -57,11 +58,7 @@ async function handlePush(ev) {
 
   new BroadcastChannel('notif').postMessage('heyyy');
 
-  const notification = self.registration.showNotification(title, {
-    icon,
-    body: `from @${handle}`,
-  });
-
+  const notification = self.registration.showNotification(title, { icon, body });
   ev.waitUntil(notification);
 }
 

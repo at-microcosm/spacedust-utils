@@ -1,0 +1,8 @@
+{
+  "name": "lexicons",
+  "version": "0.0.1",
+  "description": "info about atproto apps",
+  "main": "index.js",
+  "scripts": {},
+  "author": ""
+}

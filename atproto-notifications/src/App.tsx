@@ -6,6 +6,8 @@ import { Feed } from './components/Feed';
 import { urlBase64ToUint8Array } from './utils';
 import './App.css'
 
+import lexicons from 'lexicons';
+
 const Problem = ({ children }) => (
   <div className="problem">
     <p>Sorry, {children}</p>

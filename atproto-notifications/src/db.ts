@@ -76,7 +76,6 @@ export async function insertNotification(notif: {
       count.unread += 1;
       store.put(count, key);
     };
-    const req = tx.objectStore(s).get(s === 'all' ? s : notif[s]);
   }
 
   return new Promise((resolve, reject) => {
