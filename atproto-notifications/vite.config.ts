@@ -8,7 +8,7 @@ const buildServiceWorker = forProd => ({
   enforce: 'pre',
   transformIndexHtml() {
     buildSync({
-      minify: true,
+      minify: forProd,
       bundle: true,
       entryPoints: [join(process.cwd(), 'src', 'service-worker.ts')],
       outfile: join(process.cwd(), forProd ? 'dist' : 'public', 'service-worker.js'),

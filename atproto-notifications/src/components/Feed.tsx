@@ -1,5 +1,25 @@
 import { useEffect, useState } from 'react';
-import { getNotifications } from '../db';
+import { getNotifications, getSecondary } from '../db';
+
+function Asdf({ inc, secondary }) {
+  const [secondaries, setSecondaries] = useState([]);
+  useEffect(() => {
+    (async () => {
+      const secondaries = await getSecondary(secondary);
+      secondaries.sort((a, b) => b.unread - a.unread);
+      setSecondaries(secondaries);
+    })();
+  }, [inc, secondary]);
+
+  return (
+    <div>
+      <p>secondaries: ({secondaries.length})</p>
+      {secondaries.map(a => (
+        <p key={a.k}>asdf {a.k} ({a.unread}/{a.total})</p>
+      ))}
+    </div>
+  );
+}
 
 export function Feed() {
 
@@ -16,14 +36,18 @@ export function Feed() {
   // this could be combined with the broadcast thing above, but for now just chain deps
   const [feed, setFeed] = useState([]);
   useEffect(() => {
-    (async () => setFeed((await getNotifications())))();
+    (async () => setFeed(await getNotifications()))();
   }, [inc]);
 
   if (feed.length === 0) {
     return 'no notifications loaded';
   }
-  return feed.map(([k, n]) => (
-    <p key={k}>{k}: {n.source} ({n.source_record}) <code>{JSON.stringify(n)}</code></p>
-  ));
-
+  return (
+    <div className="feed">
+      <Asdf inc={inc} secondary='source' />
+      {feed.map(([k, n]) => (
+        <p key={k}>{k}: {n.source} ({n.source_record}) <code>{JSON.stringify(n)}</code></p>
+      ))}
+    </div>
+  );
 }

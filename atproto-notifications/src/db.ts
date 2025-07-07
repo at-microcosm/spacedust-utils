@@ -18,10 +18,10 @@ export const getDB = ((upgrade, v) => {
   // primary store for notifications
   try {
     // upgrade is a reset: entirely remove the store (ignore errors if it didn't exist)
-    db.deleteObjectStore('notifs');
+    db.deleteObjectStore(NOTIFICATIONS);
   } catch (e) {}
   const notifStore = db.createObjectStore(NOTIFICATIONS, {
-    key: 'id',
+    keyPath: 'id',
     autoIncrement: true,
   });
   // subject prob doesn't need an index, could just query constellation
@@ -44,13 +44,13 @@ export const getDB = ((upgrade, v) => {
       db.deleteObjectStore(secondary);
     } catch (e) {}
     const store = db.createObjectStore(secondary, {
-      key: 'k',
+      keyPath: 'k',
     });
     store.createIndex('total', 'total', { unique: false });
     store.createIndex('unread', 'unread', { unique: false });
   }
 
-}, 3);
+}, 4);
 
 export async function insertNotification(notif: {
   subject: String,
@@ -71,10 +71,14 @@ export async function insertNotification(notif: {
     const store = tx.objectStore(secondary);
     const key = secondary === 'all' ? 'all' : notif[secondary];
     store.get(key).onsuccess = ev => {
-      let count = ev.target.result ?? { total: 0, unread: 0 };
+      let count = ev.target.result ?? {
+        k: key,
+        total: 0,
+        unread: 0,
+      };
       count.total += 1;
       count.unread += 1;
-      store.put(count, key);
+      store.put(count);
     };
   }
 
@@ -102,5 +106,17 @@ export async function getNotifications(limit = 30) {
         resolve(res);
       }
     }
+  });
+}
+
+export async function getSecondary(secondary) {
+  const db = await getDB();
+  const obj = db
+    .transaction([secondary])
+    .objectStore(secondary)
+    .getAll();
+  return new Promise((resolve, reject) => {
+    obj.onerror = () => reject(obj.error);
+    obj.onsuccess = ev => resolve(ev.target.result);
   });
 }

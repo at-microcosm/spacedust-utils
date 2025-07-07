@@ -36,7 +36,6 @@ async function handlePush(ev) {
   // TODO: user pref for alt client -> prefer that client's icon
   const lex = lexicons[appPrefix];
   const icon = lex?.clients[0]?.icon;
-  console.log('app', app, 'lex', lex, lexicons);
   const title = lex?.known_sources[source.slice(app.length + 1)] ?? source;
   const body = `from @${handle} on ${lex?.name ?? app}`;
 

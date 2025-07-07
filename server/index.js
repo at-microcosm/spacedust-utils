@@ -25,6 +25,7 @@ const addSub = (did, sub) => {
   if (!subs.has(did)) {
     subs.set(did, []);
   }
+  sub.t = new Date();
   subs.get(did).push(sub);
   updateSubs();
 };
@@ -70,7 +71,14 @@ const handleDust = async event => {
   }
 
   const expiredSubs = [];
-  for (const sub of subs.get(did) ?? []) {    try {
+  const now = new Date();
+  for (const sub of subs.get(did) ?? []) {
+    try {
+      if (now - sub.t < 1500) {
+        console.warn('skipping for rate limit');
+        continue;
+      }
+      sub.t = now;
       await webpush.sendNotification(sub, JSON.stringify({ subject, source, source_record }));
     } catch (err) {
       if (400 <= err.statusCode && err.statusCode < 500) {
