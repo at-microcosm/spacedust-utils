@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getNotifications, getSecondary } from '../db';
 import { ButtonGroup } from './Buttons';
+import { Notification } from './Notification';
 import psl from 'psl';
 import lexicons from 'lexicons';
 
@@ -138,9 +139,11 @@ export function Feed() {
           />
         </div>
       )}
-      {feed.map(([k, n]) => (
-        <p key={k}>{k}: {n.source} ({n.source_record}) <code>{JSON.stringify(n)}</code></p>
-      ))}
+      <div className="feed-notifications">
+        {feed.map(([k, n]) => (
+          <Notification key={k} {...n} />
+        ))}
+      </div>
     </div>
   );
 }

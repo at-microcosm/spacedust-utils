@@ -9,7 +9,7 @@
 }
 
 .feed-filter-type h4,
-.feed-filter-secondary {
+.feed-filter-secondary h4 {
   margin: 0;
 }
 
@@ -20,4 +20,9 @@
   position: relative;
   top: 0.1rem;
   margin-right: 0.25rem;
+}
+
+.feed-notifications {
+  text-align: left;
+  margin: 2rem auto;
 }

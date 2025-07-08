@@ -1,0 +1,25 @@
+
+
+.notification {
+  padding: 0.75rem;
+  border: 0.5px solid hsla(0, 0%, 50%, 0.3);
+  border-width: 0.5px 0;
+}
+a.notification {
+  display: block;
+  font: inherit;
+  color: inherit;
+}
+a.notification:hover {
+  /*box-shadow: 0 42px 42px -42px inset #2c343c;*/
+  /*, 0 -42px 42px -42px inset #221828;*/
+  /*box-shadow: 0 42px 42px -42px inset #2c343c;*/
+  /*background: #221828;*/
+  background: #0b0d0f;
+  border-top-color: hsla(0, 0%, 100%, 0.3);
+  border-bottom-color: hsla(0, 0%, 0%, 0.3);
+}
+
+.handle {
+  color: skyblue;
+}
