@@ -25,6 +25,7 @@ function SecondaryFilter({ inc, secondary, current, onUpdate }) {
     <ButtonGroup
       options={secondaries.map(({ k, unread, total }) => {
 
+        // blehhhhhhhhhhhh
 
         let title = k;
         let icon;
@@ -46,8 +47,24 @@ function SecondaryFilter({ inc, secondary, current, onUpdate }) {
           icon = lex?.clients[0]?.icon;
           appName = lex?.name;
           title = lex?.known_sources[k.slice(app.length + 1)] ?? k;
-        }
-        if (secondary === 'app') {
+
+        } else if (secondary === 'group') {
+
+          let appPrefix;
+          try {
+            const [nsid, ...rp] = k.split(':');
+            const parts = nsid.split('.');
+            const unreversed = parts.toReversed().join('.');
+            app = psl.parse(unreversed)?.domain ?? 'unknown';
+            appPrefix = app.split('.').toReversed().join('.');
+          } catch (e) {
+            console.error('getting top app failed', e);
+          }
+          const lex = lexicons[appPrefix];
+          icon = lex?.clients[0]?.icon;
+          appName = lex?.name;
+
+        } else if (secondary === 'app') {
           const appReversed = k.split('.').toReversed().join('.');
           const lex = lexicons[appReversed];
           icon = lex?.clients[0]?.icon;
