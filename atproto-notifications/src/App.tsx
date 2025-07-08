@@ -36,8 +36,13 @@ function requestPermission(host, setAsking) {
   }
 }
 
+let autoreg;
 async function subscribeToPush() {
   const registration = await navigator.serviceWorker.register('/service-worker.js');
+
+  // auto-update in case they keep it open in a tab for a long time
+  clearInterval(autoreg);
+  autoreg = setInterval(() => registration.update(), 4 * 60 * 60 * 1000); // every 4h
 
   const subscribeOptions = {
     userVisibleOnly: true,

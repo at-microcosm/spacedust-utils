@@ -1,0 +1,23 @@
+.feed-filter-type,
+.feed-filter-secondary {
+  align-items: baseline;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  max-width: calc(100vw - 2rem);
+  margin-top: 0.5rem;
+}
+
+.feed-filter-type h4,
+.feed-filter-secondary {
+  margin: 0;
+}
+
+.app-icon {
+  height: 1rem;
+  display: inline-block;
+  vertical-align: baseline;
+  position: relative;
+  top: 0.1rem;
+  margin-right: 0.25rem;
+}

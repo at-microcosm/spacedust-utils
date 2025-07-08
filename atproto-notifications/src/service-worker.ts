@@ -3,6 +3,7 @@ import lexicons from 'lexicons';
 import { resolveDid } from './atproto/resolve';
 import { insertNotification } from './db';
 
+self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('push', handlePush);
 self.addEventListener('notificationclick', handleNotificationClick);
 

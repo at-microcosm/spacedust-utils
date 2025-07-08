@@ -1,12 +1,12 @@
 import './Buttons.css';
 
-export function ButtonGroup({ options, current, onChange, subtle, big, vertical }) {
+export function ButtonGroup({ options, current, onChange }) {
   return (
-    <div className={`button-group ${vertical ? 'vertical' : ''}`}>
+    <div className='button-group'>
       {options.map(({val, label}) => (
         <button
           key={val}
-          className={`bg ${subtle ? 'bg-subtle' : ''} ${big ? 'big' : ''} ${val === current ? 'current' : ''}`}
+          className={val === current ? 'current' : ''}
           onClick={() => onChange(val)}
         >
           {label ?? val}
