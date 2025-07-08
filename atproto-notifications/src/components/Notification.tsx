@@ -1,3 +1,4 @@
+import ReactTimeAgo from 'react-time-ago';
 import psl from 'psl';
 import lexicons from 'lexicons';
 import { resolveDid } from '../atproto/resolve';
@@ -5,7 +6,7 @@ import { Fetch } from './Fetch';
 
 import './Notification.css';
 
-export function Notification({ app, group, source, source_record, source_did, subject }) {
+export function Notification({ app, group, source, source_record, source_did, subject, timestamp }) {
 
   // TODO: clean up / move this to lexicons package?
   let title = source;
@@ -25,19 +26,26 @@ export function Notification({ app, group, source, source_record, source_did, su
 
   const contents = (
     <>
-      {icon && (
-        <img className="app-icon" src={icon} title={appName ?? app} alt="" />
-      )}
-      {title} from
-      {' '}
-      {source_did ? (
-        <Fetch
-          using={resolveDid}
-          args={[source_did]}
-          ok={handle => <span className="handle">@{handle}</span>}
-        />
-      ) : (
-        source_record
+      <div className="notification-info">
+        {icon && (
+          <img className="app-icon" src={icon} title={appName ?? app} alt="" />
+        )}
+        {title} from
+        {' '}
+        {source_did ? (
+          <Fetch
+            using={resolveDid}
+            args={[source_did]}
+            ok={handle => <span className="handle">@{handle}</span>}
+          />
+        ) : (
+          source_record
+        )}
+      </div>
+      {timestamp && (
+        <div className="notification-when">
+          <ReactTimeAgo date={new Date(timestamp)} locale="en-US"/>
+        </div>
       )}
     </>
   );

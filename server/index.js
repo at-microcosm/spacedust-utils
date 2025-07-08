@@ -8,6 +8,10 @@ const cookie = require('cookie');
 const cookieSig = require('cookie-signature');
 const webpush = require('web-push');
 
+// kind of silly but right now there's no way to tell spacedust that we want an alive connection
+// but don't want the notification firehose (everything filtered out)
+// so... the final filter is an absolute on this fake did, effectively filtering all notifs.
+// (this is only used when there are no subscribers registered)
 const DUMMY_DID = 'did:plc:zzzzzzzzzzzzzzzzzzzzzzzz';
 
 const CORS_PERMISSIVE = req => ({
@@ -58,6 +62,7 @@ const handleDust = async event => {
     return;
   }
   const { link: { subject, source, source_record } } = data;
+  const timestamp = +new Date();
 
   let did;
   if (subject.startsWith('did:')) did = subject;
@@ -72,6 +77,8 @@ const handleDust = async event => {
 
   const expiredSubs = [];
   const now = new Date();
+  const payload = JSON.stringify({ subject, source, source_record, timestamp });
+  console.log('pl', payload);
   for (const sub of subs.get(did) ?? []) {
     try {
       if (now - sub.t < 1500) {
@@ -79,7 +86,7 @@ const handleDust = async event => {
         continue;
       }
       sub.t = now;
-      await webpush.sendNotification(sub, JSON.stringify({ subject, source, source_record }));
+      await webpush.sendNotification(sub, payload);
     } catch (err) {
       if (400 <= err.statusCode && err.statusCode < 500) {
         expiredSubs.push(sub);

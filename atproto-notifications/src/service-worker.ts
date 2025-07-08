@@ -8,7 +8,7 @@ self.addEventListener('push', handlePush);
 self.addEventListener('notificationclick', handleNotificationClick);
 
 async function handlePush(ev) {
-  const { subject, source, source_record } = ev.data.json();
+  const { subject, source, source_record, timestamp } = ev.data.json();
   let group;
   let app;
   let appPrefix;
@@ -45,6 +45,7 @@ async function handlePush(ev) {
 
   try {
     await insertNotification({
+      timestamp,
       subject,
       source_record,
       source_did,
