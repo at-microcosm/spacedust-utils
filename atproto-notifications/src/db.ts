@@ -1,5 +1,6 @@
 const NOTIFICATIONS = 'notifications';
-const SECONDARIES = ['all', 'source', 'group', 'app'];
+
+export const SECONDARIES = ['all', 'source', 'group', 'app'];
 
 export const getDB = ((upgrade, v) => {
   let instance;

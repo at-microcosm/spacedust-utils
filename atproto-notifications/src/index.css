@@ -61,6 +61,7 @@ button.subtle {
   margin: 0;
   padding: 0;
   font: inherit;
+  box-shadow: none;
 }
 button.bad {
   color: tomato;

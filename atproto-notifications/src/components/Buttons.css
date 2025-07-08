@@ -1,0 +1,49 @@
+button.bg:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+button.bg {
+  font: inherit;
+  cursor: pointer;
+  padding: 0 0.5rem;
+}
+button.bg:not(.bg-subtle) {
+  background: #111;
+  border: 1px solid hsla(0, 0%, 50%, 0.5);
+  border-radius: 0.5rem;
+}
+
+button.bg.bg-subtle {
+  background: transparent;
+  border: 0;
+}
+button.bg.bg-subtle:hover {
+  color: inherit;
+  background: hsla(0, 0%, 0%, 0.3);
+}
+
+button.bg.big {
+  padding: 0.25rem 0.75rem;
+}
+
+.button-group.vertical {
+  display: flex;
+  flex-direction: column;
+}
+
+.button-group > button.bg {
+  color: #888;
+}
+.button-group > button.bg.current {
+  font-weight: bold;
+  color: #99bb77;
+}
+.button-group > button.bg.current.bg-subtle {
+  background: #111; /*hsla(0, 0%, 0%, 0.2);*/
+}
+
+@media screen and (max-width: 600px) {
+  button.bg.bg-subtle {
+    font-size: 0.85rem;
+  }
+}
