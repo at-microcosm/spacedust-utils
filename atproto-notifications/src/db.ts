@@ -89,18 +89,28 @@ export async function insertNotification(notif: {
   });
 }
 
-export async function getNotifications(limit = 30) {
+export async function getNotifications(secondary, secondaryFilter) {
+  const limit = 30;
   let res = [];
-  const oc = (await getDB())
+  const store = (await getDB())
     .transaction([NOTIFICATIONS])
-    .objectStore(NOTIFICATIONS)
-    .openCursor(undefined, 'prev');
+    .objectStore(NOTIFICATIONS);
+
+  let oc;
+  if (!!secondary && secondary !== 'all' && !!secondaryFilter) {
+    console.log('with', secondary, secondaryFilter)
+    oc = store
+      .index(secondary)
+      .openCursor(IDBKeyRange.only(secondaryFilter), 'prev');
+  } else {
+    oc = store.openCursor(null, 'prev');
+  }
   return new Promise((resolve, reject) => {
     oc.onerror = () => reject(oc.error);
     oc.onsuccess = ev => {
       const cursor = event.target.result;
       if (cursor) {
-        res.push([cursor.key, cursor.value]);
+        res.push([cursor.value.id, cursor.value]);
         if (res.length < limit) cursor.continue();
         else resolve(res);
       } else {

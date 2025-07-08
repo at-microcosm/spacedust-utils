@@ -89,8 +89,8 @@ export function Feed() {
   // this could be combined with the broadcast thing above, but for now just chain deps
   const [feed, setFeed] = useState([]);
   useEffect(() => {
-    (async () => setFeed(await getNotifications()))();
-  }, [inc]);
+    (async () => setFeed(await getNotifications(secondary, secondaryFilter)))();
+  }, [inc, secondary, secondaryFilter]);
 
   if (feed.length === 0) {
     return 'no notifications loaded';
