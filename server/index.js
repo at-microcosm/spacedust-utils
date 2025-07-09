@@ -7,6 +7,8 @@ const jose = require('jose');
 const cookie = require('cookie');
 const cookieSig = require('cookie-signature');
 const webpush = require('web-push');
+const { v4: uuidv4 } = require('uuid');
+const { DB } = require('./db');
 
 // kind of silly but right now there's no way to tell spacedust that we want an alive connection
 // but don't want the notification firehose (everything filtered out)
@@ -23,23 +25,14 @@ const CORS_PERMISSIVE = req => ({
 
 let spacedust;
 let spacedustEverStarted = false;
-const subs = new Map();
 
-const addSub = (did, sub) => {
-  if (!subs.has(did)) {
-    subs.set(did, []);
-  }
-  sub.t = new Date();
-  subs.get(did).push(sub);
-  updateSubs();
-};
 
-const updateSubs = () => {
+const updateSubs = db => {
   if (!spacedust) {
     console.warn('not updating subscription, no spacedust (reconnecting?)');
     return;
   }
-  const wantedSubjectDids = Array.from(subs.keys());
+  const wantedSubjectDids = db.getSubscribedDids();
   if (wantedSubjectDids.length === 0) {
     wantedSubjectDids.push(DUMMY_DID);
   }
@@ -52,7 +45,38 @@ const updateSubs = () => {
   }));
 };
 
-const handleDust = async event => {
+async function push(db, pushSubscription, payload) {
+  const { session, subscription, since_last_push } = pushSubscription;
+  if (since_last_push !== null && since_last_push < 1.618) {
+    console.warn(`rate limiter: dropping too-soon push (${since_last_push})`);
+    return;
+  }
+
+  let sub;
+  try {
+    sub = JSON.parse(subscription);
+  } catch (e) {
+    console.error('failed to parse subscription json, dropping session', e);
+    db.deleteSub(session);
+    return;
+  }
+
+  try {
+    await webpush.sendNotification(sub, payload);
+  } catch (err) {
+    if (400 <= err.statusCode && err.statusCode < 500) {
+      console.info(`removing sub for ${err.statusCode}`);
+      db.deleteSub(session);
+      return;
+    } else {
+      console.warn('something went wrong for another reason', err);
+    }
+  }
+
+  db.updateLastPush(session);
+}
+
+const handleDust = db => async event => {
   console.log('got', event.data);
   let data;
   try {
@@ -75,41 +99,12 @@ const handleDust = async event => {
     return;
   }
 
-  const expiredSubs = [];
-  const now = new Date();
+  const subs = db.getSubsByDid(did);
   const payload = JSON.stringify({ subject, source, source_record, timestamp });
-  console.log('pl', payload);
-  for (const sub of subs.get(did) ?? []) {
-    try {
-      if (now - sub.t < 1500) {
-        console.warn('skipping for rate limit');
-        continue;
-      }
-      sub.t = now;
-      await webpush.sendNotification(sub, payload);
-    } catch (err) {
-      if (400 <= err.statusCode && err.statusCode < 500) {
-        expiredSubs.push(sub);
-        console.info(`removing sub for ${err.statusCode}`);
-      }
-    }
-  }
-  if (expiredSubs.length > 0) {
-    const activeSubs = subs.get(did)?.filter(s => !expiredSubs.includes(s));
-    if (!activeSubs) { // concurrently removed already
-      return;
-    }
-    if (activeSubs.length === 0) {
-      console.info('removed last subscriber for', did);
-      subs.delete(did);
-      updateSubs();
-    } else {
-      subs.set(did, activeSubs);
-    }
-  }
+  await Promise.all(subs.map(pushSubscription => push(db, pushSubscription, payload)));
 };
 
-const connectSpacedust = host => {
+const connectSpacedust = (db, host) => {
   spacedust = new WebSocket(`${host}/subscribe?instant=true&wantedSubjectDids=${DUMMY_DID}`);
   let restarting = false;
 
@@ -118,12 +113,12 @@ const connectSpacedust = host => {
     restarting = true;
     let wait = Math.round(500 + (Math.random() * 1000));
     console.info(`restarting spacedust connection in ${wait}ms...`);
-    setTimeout(() => connectSpacedust(host), wait);
+    setTimeout(() => connectSpacedust(db, host), wait);
     spacedust = null;
   }
 
-  spacedust.onopen = updateSubs
-  spacedust.onmessage = handleDust;
+  spacedust.onopen = () => updateSubs(db);
+  spacedust.onmessage = handleDust(db);
 
   spacedust.onerror = e => {
     console.error('spacedust errored:', e);
@@ -159,22 +154,32 @@ const getRequesBody = async req => new Promise((resolve, reject) => {
 });
 
 const COOKIE_BASE = { httpOnly: true, secure: true, partitioned: true, sameSite: 'None' };
-const setDidCookie = (res, did, appSecret) => res.setHeader('Set-Cookie', cookie.serialize(
-  'verified-did',
-  cookieSig.sign(did, appSecret),
+const setAccountCookie = (res, did, session, appSecret) => res.setHeader('Set-Cookie', cookie.serialize(
+  'verified-account',
+  cookieSig.sign(JSON.stringify([did, session]), appSecret),
   { ...COOKIE_BASE, maxAge: 90 * 86_400 },
 ));
-const clearDidCookie = res => res.setHeader('Set-Cookie', cookie.serialize(
-  'verified-did',
+const clearAccountCookie = res => res.setHeader('Set-Cookie', cookie.serialize(
+  'verified-account',
   '',
   { ...COOKIE_BASE, expires: new Date(0) },
 ));
-const getDidCookie = (req, res, appSecret) => {
+const getAccountCookie = (req, res, appSecret) => {
   const cookies = cookie.parse(req.headers.cookie ?? '');
-  const untrusted = cookies['verified-did'] ?? '';
-  const did = cookieSig.unsign(untrusted, appSecret);
-  if (!did) clearDidCookie(res);
-  return did;
+  const untrusted = cookies['verified-account'] ?? '';
+  const json = cookieSig.unsign(untrusted, appSecret);
+  if (!json) {
+    clearAccountCookie(res);
+    return null;
+  }
+  try {
+    const [did, session] = JSON.parse(json);
+    return [did, session];
+  } catch (e) {
+    console.warn('validated account cookie but failed to parse json', e);
+    clearAccountCookie(res);
+    return null;
+  }
 };
 
 const handleFile = (fname, ftype) => async (req, res, replace = {}) => {
@@ -198,7 +203,7 @@ const handleFile = (fname, ftype) => async (req, res, replace = {}) => {
 const handleIndex = handleFile('index.html', 'text/html');
 const handleServiceWorker = handleFile('service-worker.js', 'application/javascript');
 
-const handleVerify = async (req, res, jwks, appSecret) => {
+const handleVerify = async (db, req, res, jwks, appSecret) => {
   const body = await getRequesBody(req);
   const { token } = JSON.parse(body);
   let did;
@@ -206,26 +211,30 @@ const handleVerify = async (req, res, jwks, appSecret) => {
     const verified = await jose.jwtVerify(token, jwks);
     did = verified.payload.sub;
   } catch (e) {
-    return clearDidCookie(res).writeHead(400).end(JSON.stringify({ reason: 'verification failed' }));
+    return clearAccountCookie(res).writeHead(400).end(JSON.stringify({ reason: 'verification failed' }));
   }
-  setDidCookie(res, did, appSecret);
+  db.addAccount(did);
+  const session = uuidv4();
+  setAccountCookie(res, did, session, appSecret);
   return res.writeHead(200).end('okayyyy');
 };
 
-const handleSubscribe = async (req, res, appSecret) => {
-  let did = getDidCookie(req, res, appSecret);
-  if (!did) return res.writeHead(400).end(JSON.stringify({ reason: 'failed to verify cookie signature' }));
+const handleSubscribe = async (db, req, res, appSecret) => {
+  let info = getAccountCookie(req, res, appSecret);
+  if (!info) return res.writeHead(400).end(JSON.stringify({ reason: 'failed to verify cookie signature' }));
+  const [did, session] = info;
 
   const body = await getRequesBody(req);
   const { sub } = JSON.parse(body);
-  addSub('did:plc:z72i7hdynmk6r22z27h6tvur', sub); // DELETEME @bsky.app (DEBUG)
-  addSub(did, sub);
+  // addSub('did:plc:z72i7hdynmk6r22z27h6tvur', sub); // DELETEME @bsky.app (DEBUG)
+  db.addPushSub(did, session, JSON.stringify(sub));
+  updateSubs(db);
   res.setHeader('Content-Type', 'application/json');
   res.writeHead(201);
   res.end('{"oh": "hi"}');
 };
 
-const requestListener = (pubkey, jwks, appSecret) => (req, res) => {
+const requestListener = (pubkey, jwks, appSecret, db) => (req, res) => {
   if (req.method === 'GET' && req.url === '/') {
     return handleIndex(req, res, { PUBKEY: pubkey });
   }
@@ -239,7 +248,7 @@ const requestListener = (pubkey, jwks, appSecret) => (req, res) => {
   }
   if (req.method === 'POST' && req.url === '/verify') {
     res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
-    return handleVerify(req, res, jwks, appSecret);
+    return handleVerify(db, req, res, jwks, appSecret);
   }
 
   if (req.method === 'OPTIONS' && req.url === '/subscribe') {
@@ -248,7 +257,7 @@ const requestListener = (pubkey, jwks, appSecret) => (req, res) => {
   }
   if (req.method === 'POST' && req.url === '/subscribe') {
     res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
-    return handleSubscribe(req, res, appSecret);
+    return handleSubscribe(db, req, res, appSecret);
   }
 
   res.writeHead(200);
@@ -270,14 +279,19 @@ const main = env => {
   const whoamiHost = env.WHOAMI_HOST ?? 'https://who-am-i.microcosm.blue';
   const jwks = jose.createRemoteJWKSet(new URL(`${whoamiHost}/.well-known/jwks.json`));
 
+  const dbFilename = env.DB_FILE ?? './db.sqlite3';
+  const initDb = process.argv.includes('--init-db');
+  console.log(`connecting sqlite db file: ${dbFilename} (initializing: ${initDb})`);
+  const db = new DB(dbFilename, initDb);
+
   const spacedustHost = env.SPACEDUST_HOST ?? 'wss://spacedust.microcosm.blue';
-  connectSpacedust(spacedustHost);
+  connectSpacedust(db, spacedustHost);
 
   const host = env.HOST ?? 'localhost';
   const port = parseInt(env.PORT ?? 8000, 10);
 
   http
-    .createServer(requestListener(keys.publicKey, jwks, appSecret))
+    .createServer(requestListener(keys.publicKey, jwks, appSecret, db))
     .listen(port, host, () => console.log(`listening at http://${host}:${port}`));
 };
 
