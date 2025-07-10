@@ -183,10 +183,11 @@ const getAccountCookie = (req, res, appSecret) => {
   }
 };
 
+// never EVER allow user-controllable input into fname (or just fix the path joining)
 const handleFile = (fname, ftype) => async (req, res, replace = {}) => {
   let content
   try {
-    content = await fs.promises.readFile(import.meta.dirname + '/web-content/' + fname);
+    content = await fs.promises.readFile(`./web-content/${fname}`); // DANGERDANGER
     content = content.toString();
   } catch (err) {
     console.error(err);
