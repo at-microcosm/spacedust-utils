@@ -186,7 +186,7 @@ const getAccountCookie = (req, res, appSecret) => {
 const handleFile = (fname, ftype) => async (req, res, replace = {}) => {
   let content
   try {
-    content = await fs.promises.readFile(__dirname + '/web-content/' + fname);
+    content = await fs.promises.readFile(import.meta.dirname + '/web-content/' + fname);
     content = content.toString();
   } catch (err) {
     console.error(err);
