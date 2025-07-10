@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
+    "just-build": "VITE_PUSH_PUBKEY=BDZZicf6KaHoH6EI9OETLO3G9M4e6mKQDRJDcj_XUUxvdsnz08ne-URkk_ToqpwWgrRqXIBd0LJ_w8bP-R5xMKA vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
