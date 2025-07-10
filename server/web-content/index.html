@@ -1,134 +1,18 @@
 <!doctype html>
-<style>
-#error-message {
-  color: tomato;
-}
-</style>
-
-hiiiiii
-
-<label><input id="did" placeholder="did:plc:..." /> DID</label>
-<button id="subscribe">subscribe</button>
-
-<p id="error-message"></p>
-
-
-<script>
-const err = m => {
-  document.getElementById('error-message').textContent = m;
-  throw new Error(m);
-};
-const clearErr = () => {
-  document.getElementById('error-message').textContent = '';
-};
-
-if (!('serviceWorker' in navigator)) err('service worker not supported');
-
-if (!('PushManager' in window)) err('push not supported');
-
-function urlBase64ToUint8Array(base64String) {
-    var padding = '='.repeat((4 - base64String.length % 4) % 4);
-    var base64 = (base64String + padding)
-        .replace(/\-/g, '+')
-        .replace(/_/g, '/');
-
-    var rawData = window.atob(base64);
-    var outputArray = new Uint8Array(rawData.length);
-
-    for (var i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-}
-
-function registerServiceWorker() {
-  return navigator.serviceWorker
-    .register('/service-worker.js')
-    .then(function (registration) {
-      console.log('Service worker successfully registered.');
-      return registration;
-    })
-    .catch(function (err) {
-      console.error('Unable to register service worker.', err);
-    });
-}
-
-function askPermission() {
-  return new Promise(function (resolve, reject) {
-    const permissionResult = Notification.requestPermission(function (result) {
-      resolve(result);
-    });
-
-    if (permissionResult) {
-      permissionResult.then(resolve, reject);
-    }
-  }).then(function (permissionResult) {
-    if (permissionResult !== 'granted') {
-      throw new Error("We weren't granted permission.");
-    }
-  });
-}
-
-function subscribeUserToPush() {
-  return navigator.serviceWorker
-    .register('/service-worker.js')
-    .then(function (registration) {
-      const subscribeOptions = {
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(PUBKEY),
-      };
-
-      return registration.pushManager.subscribe(subscribeOptions);
-    })
-    .then(function (pushSubscription) {
-      console.log(
-        'Received PushSubscription: ',
-        JSON.stringify(pushSubscription),
-      );
-      return pushSubscription;
-    });
-}
-
-document.getElementById('subscribe').addEventListener('click', async () => {
-  clearErr();
-
-  const did = document.getElementById('did').value;
-  if (!did.startsWith('did:')) err('should start with `did:`');
-
-  let perm;
-  try {
-    perm = await askPermission();
-  } catch (err) {
-    console.error(err);
-    err('notification permissions are needed to give you notifications');
-  }
-
-  let sub;
-  try {
-    sub = await subscribeUserToPush();
-  } catch (err) {
-    console.error(err);
-    err('failed to subscribe for notification');
-  }
-
-  let res;
-  try {
-    res = await fetch('/subscribe', {
-      method: 'POST',
-      body: JSON.stringify({ did, sub }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  } catch (err) {
-    console.error(err);
-    err('failed to create subscription with backend');
-  }
-
-  if (!res.ok) {
-    console.error(await res.text());
-    err('not-ok response trying to create backend subscription');
-  }
-});
-
-</script>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>notifications api</title>
+  </head>
+  <body>
+    <h1>hello!</h1>
+    <p>this is the api server for <a href="https://spacedust.microcosm.blue/">spacedust</a> demos!</p>
+    <p>the source code for this server is on github at <a href="https://github.com/at-microcosm/spacedust-utils/tree/main/server">at-microcosm/spacedust-utils</a>.</p>
+    <h3>demos:</h3>
+    <ul>
+      <li>
+        <p><a href="https://notifications.microcosm.blue">universal atproto notifications</a> with spacedust and webpush</p>
+      </li>
+    </ul>
+  </body>
+</html>
