@@ -225,10 +225,20 @@ const handleVerify = async (db, req, res, jwks, appSecret) => {
   return res.writeHead(200).end('okayyyy');
 };
 
-const handleSubscribe = async (db, req, res, appSecret) => {
+const handleSubscribe = async (db, req, res, appSecret, adminDid) => {
   let info = getAccountCookie(req, res, appSecret);
   if (!info) return res.writeHead(400).end(JSON.stringify({ reason: 'failed to verify cookie signature' }));
   const [did, session] = info;
+
+  // not yet public!!
+  if (did !== adminDid) {
+    res.setHeader('Content-Type', 'application/json');
+    res.writeHead(403);
+
+    return clearAccountCookie(res).end(JSON.stringify({
+      reason: 'the spacedust notifications demo isn\'t public yet!',
+    }));
+  }
 
   const body = await getRequesBody(req);
   const { sub } = JSON.parse(body);
@@ -240,7 +250,7 @@ const handleSubscribe = async (db, req, res, appSecret) => {
   res.end('{"oh": "hi"}');
 };
 
-const requestListener = (secrets, jwks, db) => (req, res) => {
+const requestListener = (secrets, jwks, db, adminDid) => (req, res) => {
   if (req.method === 'GET' && req.url === '/') {
     return handleIndex(req, res, { PUBKEY: secrets.pushKeys.publicKey });
   }
@@ -263,7 +273,7 @@ const requestListener = (secrets, jwks, db) => (req, res) => {
   }
   if (req.method === 'POST' && req.url === '/subscribe') {
     res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
-    return handleSubscribe(db, req, res, secrets.appSecret);
+    return handleSubscribe(db, req, res, secrets.appSecret, adminDid);
   }
 
   res.writeHead(200);
@@ -271,6 +281,9 @@ const requestListener = (secrets, jwks, db) => (req, res) => {
 }
 
 const main = env => {
+  if (!env.ADMIN_DID) throw new Error('ADMIN_DID is required to run');
+  const adminDid = env.ADMIN_DID;
+
   if (!env.SECRETS_FILE) throw new Error('SECRETS_FILE is required to run');
   const secrets = getOrCreateSecrets(env.SECRETS_FILE);
   webpush.setVapidDetails(
@@ -294,7 +307,7 @@ const main = env => {
   const port = parseInt(env.PORT ?? 8000, 10);
 
   http
-    .createServer(requestListener(secrets, jwks, db))
+    .createServer(requestListener(secrets, jwks, db, adminDid))
     .listen(port, host, () => console.log(`listening at http://${host}:${port}`));
 };
 

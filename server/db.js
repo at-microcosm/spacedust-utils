@@ -37,7 +37,8 @@ export class DB {
 
     this.#stmt_insert_account = db.prepare(
       `insert into accounts (did)
-       values (?)`);
+       values (?)
+           on conflict do nothing`);
 
     this.#stmt_get_account = db.prepare(
       `select a.first_seen,
@@ -53,7 +54,9 @@ export class DB {
 
     this.#stmt_insert_push_sub = db.prepare(
       `insert into push_subs (account_did, session, subscription)
-       values (?, ?, ?)`);
+       values (?, ?, ?)
+           on conflict do update
+          set subscription = excluded.subscription`);
 
     this.#stmt_get_all_sub_dids = db.prepare(
       `select distinct account_did

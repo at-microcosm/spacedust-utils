@@ -14,7 +14,7 @@ const Problem = ({ children }) => (
   </div>
 );
 
-function requestPermission(host, setAsking) {
+function requestPermission(host, setAsking, setPermissionError) {
   return async () => {
     setAsking(true);
     let err;
@@ -27,8 +27,17 @@ function requestPermission(host, setAsking) {
         body: JSON.stringify({ sub }),
         credentials: 'include',
       });
-      if (!res.ok) throw res;
+      if (!res.ok) {
+        let content;
+        try {
+          content = (await res.json()).reason;
+        } catch (_) {
+          content = await res.text();
+        }
+        throw content;
+      }
     } catch (e) {
+      setPermissionError(e);
       err = e;
     }
     setAsking(false);
@@ -68,6 +77,7 @@ function App() {
   const [user, setUser] = useLocalStorage('spacedust-notif-user', null);
   const [verif, setVerif] = useState(null);
   const [asking, setAsking] = useState(false);
+  const [permissionError, setPermissionError] = useState(null);
 
   const onIdentify = useCallback(async details => {
     setVerif('verifying');
@@ -102,14 +112,14 @@ function App() {
         content = <><p>Sorry, failed to verify that identity. please let us know!</p>{content}</>;
       }
     }
-  } else if (notifPerm !== 'granted') {
+  } else if (permissionError !== null || notifPerm !== 'granted') {
     content = (
       <>
         <h3>Step 2: Allow notifications</h3>
         <p>To show notifications we need permission:</p>
         <p>
           <button
-            onClick={requestPermission(host, setAsking)}
+            onClick={requestPermission(host, setAsking, setPermissionError)}
             disabled={asking}
           >
             {asking ? <>Requesting&hellip;</> : <>Request permission</>}
@@ -117,9 +127,12 @@ function App() {
         </p>
         {notifPerm === 'denied' ? (
           <p className="detail">Notification permission was denied. You may need to clear the browser setting to try again.</p>
-        ) : (
-          <p className="detail">You can revoke this any time</p>
-        )}
+        ) : permissionError ? (
+            <p className="detail">Sorry, something went wrong: {permissionError}</p>
+          ) : (
+            <p className="detail">You can revoke this any time</p>
+          )
+        }
       </>
     );
   } else {
