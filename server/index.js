@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 "use strict";
 
-const fs = require('node:fs');
-const http = require('http');
-const jose = require('jose');
-const cookie = require('cookie');
-const cookieSig = require('cookie-signature');
-const webpush = require('web-push');
-const { v4: uuidv4 } = require('uuid');
-const { DB } = require('./db');
+import fs from 'node:fs';
+import http from 'http';
+import * as jose from 'jose';
+import cookie from 'cookie';
+import cookieSig from 'cookie-signature';
+import webpush from 'web-push';
+import { v4 as uuidv4 } from 'uuid';
+import { DB } from './db.js';
 
 // kind of silly but right now there's no way to tell spacedust that we want an alive connection
 // but don't want the notification firehose (everything filtered out)
