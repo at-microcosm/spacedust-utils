@@ -107,7 +107,7 @@ function App() {
   } else if (!user) {
     if (verif === 'verifying') content = <p><em>verifying&hellip;</em></p>;
     else {
-      content = <WhoAmI onIdentify={onIdentify} />;
+      content = <WhoAmI onIdentify={onIdentify} origin="https://who-am-i.microcosm.blue" />;
       if (verif === 'failed') {
         content = <><p>Sorry, failed to verify that identity. please let us know!</p>{content}</>;
       }
