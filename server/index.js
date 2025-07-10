@@ -2,6 +2,7 @@
 "use strict";
 
 import fs from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import http from 'http';
 import * as jose from 'jose';
 import cookie from 'cookie';
@@ -132,19 +133,22 @@ const connectSpacedust = (db, host) => {
   };
 }
 
-const getOrCreateKeys = filename => {
-  let keys;
+const getOrCreateSecrets = filename => {
+  let secrets;
   try {
-    const data = fs.readFileSync(filename);
-    keys = JSON.parse(data);
+    const serialized = fs.readFileSync(filename);
+    secrets = JSON.parse(serialized);
   } catch (err) {
     if (err.code != 'ENOENT') throw err;
-    keys = webpush.generateVAPIDKeys();
-    const data = JSON.stringify(keys);
-    fs.writeFileSync(filename, data);
+    secrets = {
+      pushKeys: webpush.generateVAPIDKeys(),
+      appSecret: randomBytes(32).toString('hex'),
+    };
+    const serialized = JSON.stringify(secrets);
+    fs.writeFileSync(filename, serialized);
   }
-  console.log(`Keys ready with pubkey: ${keys.publicKey}`);
-  return keys;
+  console.log(`Keys ready with webpush pubkey: ${secrets.pushKeys.publicKey}`);
+  return secrets;
 }
 
 const getRequesBody = async req => new Promise((resolve, reject) => {
@@ -236,12 +240,12 @@ const handleSubscribe = async (db, req, res, appSecret) => {
   res.end('{"oh": "hi"}');
 };
 
-const requestListener = (pubkey, jwks, appSecret, db) => (req, res) => {
+const requestListener = (secrets, jwks, db) => (req, res) => {
   if (req.method === 'GET' && req.url === '/') {
-    return handleIndex(req, res, { PUBKEY: pubkey });
+    return handleIndex(req, res, { PUBKEY: secrets.pushKeys.publicKey });
   }
   if (req.method === 'GET' && req.url === '/service-worker.js') {
-    return handleServiceWorker(req, res, { PUBKEY: pubkey });
+    return handleServiceWorker(req, res, { PUBKEY: secrets.pushKeys.publicKey });
   }
 
   if (req.method === 'OPTIONS' && req.url === '/verify') {
@@ -250,7 +254,7 @@ const requestListener = (pubkey, jwks, appSecret, db) => (req, res) => {
   }
   if (req.method === 'POST' && req.url === '/verify') {
     res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
-    return handleVerify(db, req, res, jwks, appSecret);
+    return handleVerify(db, req, res, jwks, secrets.appSecret);
   }
 
   if (req.method === 'OPTIONS' && req.url === '/subscribe') {
@@ -259,7 +263,7 @@ const requestListener = (pubkey, jwks, appSecret, db) => (req, res) => {
   }
   if (req.method === 'POST' && req.url === '/subscribe') {
     res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
-    return handleSubscribe(db, req, res, appSecret);
+    return handleSubscribe(db, req, res, secrets.appSecret);
   }
 
   res.writeHead(200);
@@ -267,16 +271,13 @@ const requestListener = (pubkey, jwks, appSecret, db) => (req, res) => {
 }
 
 const main = env => {
-  if (!env.KEY_FILE) throw new Error('KEY_FILE is required to run');
-  const keys = getOrCreateKeys(env.KEY_FILE);
+  if (!env.SECRETS_FILE) throw new Error('SECRETS_FILE is required to run');
+  const secrets = getOrCreateSecrets(env.SECRETS_FILE);
   webpush.setVapidDetails(
     'mailto:phil@bad-example.com',
-    keys.publicKey,
-    keys.privateKey,
+    secrets.pushKeys.publicKey,
+    secrets.pushKeys.privateKey,
   );
-
-  if (!env.APP_SECRET) throw new Error('APP_SECRET is required to run');
-  const appSecret = env.APP_SECRET;
 
   const whoamiHost = env.WHOAMI_HOST ?? 'https://who-am-i.microcosm.blue';
   const jwks = jose.createRemoteJWKSet(new URL(`${whoamiHost}/.well-known/jwks.json`));
@@ -293,7 +294,7 @@ const main = env => {
   const port = parseInt(env.PORT ?? 8000, 10);
 
   http
-    .createServer(requestListener(keys.publicKey, jwks, appSecret, db))
+    .createServer(requestListener(secrets, jwks, db))
     .listen(port, host, () => console.log(`listening at http://${host}:${port}`));
 };
 
