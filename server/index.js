@@ -272,7 +272,16 @@ const handleSubscribe = async (db, req, res, appSecret, adminDid) => {
   res.end(JSON.stringify({ sup: 'hi' }));
 };
 
-const requestListener = (secrets, jwks, whoamiHost, db, adminDid) => (req, res) => {
+const attempt = listener => async (req, res) => {
+  console.log(`-> ${req.method} ${req.url}`);
+  try {
+    return await listener(req, res);
+  } catch (e) {
+    console.error('listener errored:', e);
+  }
+};
+
+const requestListener = (secrets, jwks, whoamiHost, db, adminDid) => attempt((req, res) => {
   if (req.method === 'GET' && req.url === '/') {
     return handleIndex(req, res, { PUBKEY: secrets.pushKeys.publicKey });
   }
@@ -308,7 +317,7 @@ const requestListener = (secrets, jwks, whoamiHost, db, adminDid) => (req, res) 
 
   res.writeHead(200);
   res.end('sup');
-}
+});
 
 const main = env => {
   if (!env.ADMIN_DID) throw new Error('ADMIN_DID is required to run');
