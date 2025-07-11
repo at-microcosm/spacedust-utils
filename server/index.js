@@ -169,7 +169,7 @@ const clearAccountCookie = res => res.setHeader('Set-Cookie', cookie.serialize(
   '',
   { ...COOKIE_BASE, expires: new Date(0) },
 ));
-const getAccountCookie = (req, res, appSecret, adminDid) => {
+const getAccountCookie = (req, res, appSecret, adminDid, noDidCheck = false) => {
   const cookies = cookie.parse(req.headers.cookie ?? '');
   const untrusted = cookies['verified-account'] ?? '';
   const json = cookieSig.unsign(untrusted, appSecret);
@@ -187,7 +187,7 @@ const getAccountCookie = (req, res, appSecret, adminDid) => {
   }
 
   // not yet public!!
-  if (!did || did !== adminDid) {
+  if (!did || (did !== adminDid && !noDidCheck)) {
     clearAccountCookie(res)
       .setHeader('Content-Type', 'application/json')
       .writeHead(403)
@@ -241,7 +241,7 @@ const handleHello = async (db, req, res, secrets, whoamiHost, adminDid) => {
   }
 };
 
-const handleVerify = async (db, req, res, whoamiHost, jwks, appSecret) => {
+const handleVerify = async (db, req, res, whoamiHost, jwks, appSecret, adminDid) => {
   const body = await getRequesBody(req);
   const { token } = JSON.parse(body);
   let did;
@@ -252,10 +252,14 @@ const handleVerify = async (db, req, res, whoamiHost, jwks, appSecret) => {
     console.warn('jwks verification failed', e);
     return clearAccountCookie(res).writeHead(400).end(JSON.stringify({ reason: 'verification failed' }));
   }
+  const isAdmin = did && did === adminDid;
   db.addAccount(did);
   const session = uuidv4();
   setAccountCookie(res, did, session, appSecret);
-  return res.writeHead(200).end('okayyyy');
+  return res
+    .setHeader('Content-Type', 'application/json')
+    .writeHead(200)
+    .end(JSON.stringify({ did, role: isAdmin ? 'admin' : 'public' }));
 };
 
 const handleSubscribe = async (db, req, res, appSecret, adminDid) => {
@@ -265,12 +269,40 @@ const handleSubscribe = async (db, req, res, appSecret, adminDid) => {
   const body = await getRequesBody(req);
   const { sub } = JSON.parse(body);
   // addSub('did:plc:z72i7hdynmk6r22z27h6tvur', sub); // DELETEME @bsky.app (DEBUG)
-  db.addPushSub(did, session, JSON.stringify(sub));
+  try {
+    db.addPushSub(did, session, JSON.stringify(sub));
+  } catch (e) {
+    console.warn('failed to add sub', e);
+    return res
+      .setHeader('Content-Type', 'application/json')
+      .writeHead(500)
+      .end(JSON.stringify({ reason: 'failed to register subscription' }));
+  }
   updateSubs(db);
   res.setHeader('Content-Type', 'application/json');
   res.writeHead(201);
   res.end(JSON.stringify({ sup: 'hi' }));
 };
+
+const handleLogout = async (db, req, res, appSecret) => {
+  let info = getAccountCookie(req, res, appSecret, null, true);
+  if (!info) return res.writeHead(400).end(JSON.stringify({ reason: 'failed to verify cookie signature' }));
+  const [did, session, _isAdmin] = info;
+  try {
+    db.removePushSub(did, session);
+  } catch (e) {
+    console.warn('failed to remove sub', e);
+    return res
+      .setHeader('Content-Type', 'application/json')
+      .writeHead(500)
+      .end(JSON.stringify({ reason: 'failed to register subscription' }));
+  }
+  updateSubs(db);
+  res.setHeader('Content-Type', 'application/json');
+  res.writeHead(201);
+  res.end(JSON.stringify({ sup: 'bye' }));
+
+}
 
 const attempt = listener => async (req, res) => {
   console.log(`-> ${req.method} ${req.url}`);
@@ -303,7 +335,7 @@ const requestListener = (secrets, jwks, whoamiHost, db, adminDid) => attempt((re
   }
   if (req.method === 'POST' && req.url === '/verify') {
     res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
-    return handleVerify(db, req, res, whoamiHost, jwks, secrets.appSecret);
+    return handleVerify(db, req, res, whoamiHost, jwks, secrets.appSecret, adminDid);
   }
 
   if (req.method === 'OPTIONS' && req.url === '/subscribe') {
@@ -315,8 +347,19 @@ const requestListener = (secrets, jwks, whoamiHost, db, adminDid) => attempt((re
     return handleSubscribe(db, req, res, secrets.appSecret, adminDid);
   }
 
-  res.writeHead(200);
-  res.end('sup');
+  if (req.method === 'OPTIONS' && req.url === '/logout') {
+    // TODO: probably restrict the origin
+    return res.writeHead(204, CORS_PERMISSIVE(req)).end();
+  }
+  if (req.method === 'POST' && req.url === '/logout') {
+    res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
+    return handleLogout(db, req, res, secrets.appSecret);
+  }
+
+  res
+    .setHeaders(new Headers(CORS_PERMISSIVE(req)))
+    .writeHead(404)
+    .end('not found (sorry)');
 });
 
 const main = env => {
