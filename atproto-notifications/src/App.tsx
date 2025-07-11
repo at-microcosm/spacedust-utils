@@ -105,6 +105,9 @@ function App() {
       setPushPubkey(info.webPushPublicKey);
       setWhoamiHost(info.whoamiHost);
       setRole(info.role);
+      if (info.role === 'anonymous') {
+        setUser(null);
+      }
     });
     return <>Got server hello, updating app state&hellip;</>;
   }
@@ -116,7 +119,7 @@ function App() {
     content = <Problem>your browser does not support registering push notifications.</Problem>
   } else if (!whoamiHost) {
     content = <GetJson endpoint='/hello' ok={info => <Blah info={info} />} />
-  } else if (!user || role === 'anonymous') {
+  } else if (!user) {
     if (verif === 'verifying') content = <p><em>verifying&hellip;</em></p>;
     else {
       content = <WhoAmI onIdentify={onIdentify} origin={whoamiHost} />;
@@ -124,7 +127,7 @@ function App() {
         content = <><p>Sorry, failed to verify that identity. please let us know!</p>{content}</>;
       }
     }
-  } else if (permissionError !== null || notifPerm !== 'granted') {
+  } else if (permissionError !== null || notifPerm !== 'granted' || role === 'anonymous') {
     content = (
       <>
         <h3>Step 2: Allow notifications</h3>
