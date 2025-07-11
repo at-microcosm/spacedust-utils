@@ -9,8 +9,13 @@ export default {
         icon: '/icons/app.bsky.png',
         notifications: 'https://bsky.app/notifications',
         direct_links: {
-          'at_uri:feed.post': 'https://bsky.app/profile/{did}/post/{rkey}',
-          'did': 'https://bsky.app/profile/{did}',
+          'at_uri:feed.like:subject.uri': 'https://bsky.app/profile/{subject.did}/post/{subject.rkey}',
+          'at_uri:feed.post:reply.parent.uri': 'https://bsky.app/profile/{source_record.did}/post/{source_record.rkey}',
+          'at_uri:feed.post:reply.root.uri': 'https://bsky.app/profile/{source_record.did}/post/{source_record.rkey}',
+          'at_uri:feed.post:embed.record.uri': 'https://bsky.app/profile/{source_record.did}/post/{source_record.rkey}',
+          'at_uri:feed.post:embed.record.record.uri': 'https://bsky.app/profile/{source_record.did}/post/{source_record.rkey}',
+          'did:graph.follow:subject': 'https://bsky.app/profile/{source_record.did}',
+          'did:feed.post:facets[app.bsky.richtext.facet].features[app.bsky.richtext.facet#mention].did': 'https://bsky.app/profile/{source_record.did}/post/{source_record.rkey}',
         },
       },
       {
@@ -52,10 +57,13 @@ export default {
         canonical: true,
         icon: '/icons/pub.leaflet.jpg',
         main: 'https://leaflet.pub/home',
+        direct_links: {
+          'at_uri:graph.subscription:publication': 'https://leaflet.pub/lish/{did}/{rkey}/dashboard',
+        },
       }
     ],
     known_sources: {
-      'graph.subscription:publication:': 'Subscription',
+      'graph.subscription:publication': 'Subscription',
     },
   },
   'sh.tangled': {
