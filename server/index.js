@@ -240,8 +240,7 @@ const handleHello = async (db, req, res, secrets, whoamiHost, adminDid) => {
   }
 };
 
-const handleVerify = async (db, req, res, whoamiHost, appSecret) => {
-  const jwks = jose.createRemoteJWKSet(new URL(`${whoamiHost}/.well-known/jwks.json`));
+const handleVerify = async (db, req, res, whoamiHost, jwks, appSecret) => {
   const body = await getRequesBody(req);
   const { token } = JSON.parse(body);
   let did;
@@ -249,6 +248,7 @@ const handleVerify = async (db, req, res, whoamiHost, appSecret) => {
     const verified = await jose.jwtVerify(token, jwks);
     did = verified.payload.sub;
   } catch (e) {
+    console.warn('jwks verification failed', e);
     return clearAccountCookie(res).writeHead(400).end(JSON.stringify({ reason: 'verification failed' }));
   }
   db.addAccount(did);
@@ -271,7 +271,7 @@ const handleSubscribe = async (db, req, res, appSecret, adminDid) => {
   res.end(JSON.stringify({ sup: 'hi' }));
 };
 
-const requestListener = (secrets, whoamiHost, db, adminDid) => (req, res) => {
+const requestListener = (secrets, jwks, whoamiHost, db, adminDid) => (req, res) => {
   if (req.method === 'GET' && req.url === '/') {
     return handleIndex(req, res, { PUBKEY: secrets.pushKeys.publicKey });
   }
@@ -293,7 +293,7 @@ const requestListener = (secrets, whoamiHost, db, adminDid) => (req, res) => {
   }
   if (req.method === 'POST' && req.url === '/verify') {
     res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
-    return handleVerify(db, req, res, whoamiHost, secrets.appSecret);
+    return handleVerify(db, req, res, whoamiHost, jwks, secrets.appSecret);
   }
 
   if (req.method === 'OPTIONS' && req.url === '/subscribe') {
@@ -322,6 +322,7 @@ const main = env => {
   );
 
   const whoamiHost = env.WHOAMI_HOST ?? 'https://who-am-i.microcosm.blue';
+  const jwks = jose.createRemoteJWKSet(new URL(`${whoamiHost}/.well-known/jwks.json`));
 
   const dbFilename = env.DB_FILE ?? './db.sqlite3';
   const initDb = process.argv.includes('--init-db');
@@ -335,7 +336,7 @@ const main = env => {
   const port = parseInt(env.PORT ?? 8000, 10);
 
   http
-    .createServer(requestListener(secrets, whoamiHost, db, adminDid))
+    .createServer(requestListener(secrets, jwks, whoamiHost, db, adminDid))
     .listen(port, host, () => console.log(`listening at http://${host}:${port}`));
 };
 
