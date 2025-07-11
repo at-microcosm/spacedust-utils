@@ -78,7 +78,8 @@ export class DB {
 
     this.#stmt_delete_push_sub = db.prepare(
       `delete from push_subs
-        where session = ?`);
+        where account_did = ?
+          and session = ?`);
 
     this.#stmt_get_push_info = db.prepare(
       `select created,
@@ -105,6 +106,10 @@ export class DB {
       }
       this.#stmt_insert_push_sub.run(did, session, sub);
     });
+  }
+
+  removePushSub(did, session) {
+    return this.#stmt_delete_push_sub.run(did, session);
   }
 
   getSubscribedDids() {

@@ -67,6 +67,7 @@ async function verifyUser(host, token) {
     credentials: 'include',
   });
   if (!res.ok) throw res;
+  return await res.json();
 }
 
 function App() {
@@ -83,18 +84,25 @@ function App() {
   const onIdentify = useCallback(async details => {
     setVerif('verifying');
     try {
-      await verifyUser(host, details.token)
+      const info = await verifyUser(host, details.token);
       setVerif('verified');
+      setRole(info.role);
       setUser(details);
     } catch (e) {
       console.error(e);
       setVerif('failed');
     }
-    // setTimeout(() => {
-    //   setVerif('verified');
-    //   setUser(details);
-    // }, 400);
   }, [host]);
+
+  const logout = useCallback(async () => {
+    setRole('anonymous');
+    setUser(null);
+    // TODO: clear indexeddb
+    await fetch(`${host}/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+  });
 
   let hasSW = 'serviceWorker' in navigator;
   let hasPush = 'PushManager' in window;
@@ -163,7 +171,7 @@ function App() {
             <p>
               <span className="handle">@{user.handle}</span>
               {/* TODO: clear *all* info on logout */}
-              <button className="subtle bad" onClick={() => setUser(null)}>&times;</button>
+              <button className="subtle bad" onClick={logout}>&times;</button>
             </p>
           </div>
         )}
