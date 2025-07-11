@@ -10,7 +10,7 @@ export VITE_NOTIFICATIONS_HOST=https://notifications-demo-api.microcosm.blue
 npm run just-build
 cd ..
 
-cp docs/CNAME dist/
+cp docs/CNAME atproto-notifications/dist/
 rm -fr docs
 mv atproto-notifications/dist docs
 
