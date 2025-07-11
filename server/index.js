@@ -288,9 +288,9 @@ const handleSubscribe = async (db, req, res, appSecret, adminDid) => {
 const handleLogout = async (db, req, res, appSecret) => {
   let info = getAccountCookie(req, res, appSecret, null, true);
   if (!info) return res.writeHead(400).end(JSON.stringify({ reason: 'failed to verify cookie signature' }));
-  const [did, session, _isAdmin] = info;
+  const [_did, session, _isAdmin] = info;
   try {
-    db.removePushSub(did, session);
+    db.deleteSub(session);
   } catch (e) {
     console.warn('failed to remove sub', e);
     return res
