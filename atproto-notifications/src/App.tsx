@@ -126,7 +126,7 @@ function App() {
   } else if (!hasPush) {
     content = <Problem>your browser does not support registering push notifications.</Problem>
   } else if (!whoamiHost) {
-    content = <GetJson endpoint='/hello' ok={info => <Blah info={info} />} />
+    content = <GetJson endpoint='/hello' ok={info => <Blah info={info} />} credentials />
   } else if (!user) {
     if (verif === 'verifying') content = <p><em>verifying&hellip;</em></p>;
     else {

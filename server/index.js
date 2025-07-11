@@ -188,6 +188,7 @@ const getAccountCookie = (req, res, appSecret, adminDid, noDidCheck = false) => 
 
   // not yet public!!
   if (!did || (did !== adminDid && !noDidCheck)) {
+    console.log('no, clearing you', did, did === adminDid, noDidCheck);
     clearAccountCookie(res)
       .setHeader('Content-Type', 'application/json')
       .writeHead(403)

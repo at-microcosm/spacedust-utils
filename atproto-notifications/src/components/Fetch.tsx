@@ -41,8 +41,10 @@ export function Fetch({ using, args, ok, loading, error }) {
 
 /////
 
-async function getJson(url) {
-  const res = await fetch(url);
+async function getJson(url, credentials) {
+  const opts = {};
+  if (credentials) opts.credentials = 'include';
+  const res = await fetch(url, opts);
   if (!res.ok) {
     const m = await res.text();
     throw new Error(`Failed to fetch: ${m}`);
@@ -50,7 +52,7 @@ async function getJson(url) {
   return await res.json();
 }
 
-export function GetJson({ endpoint, params, ...forFetch }) {
+export function GetJson({ endpoint, params, credentials, ...forFetch }) {
   const host = import.meta.env.VITE_NOTIFICATIONS_HOST;
   const url = new URL(endpoint, host);
   for (let [key, val] of Object.entries(params ?? {})) {
@@ -59,7 +61,7 @@ export function GetJson({ endpoint, params, ...forFetch }) {
   return (
     <Fetch
       using={getJson}
-      args={[url.toString()]}
+      args={[url.toString(), credentials]}
       {...forFetch}
     />
   );
