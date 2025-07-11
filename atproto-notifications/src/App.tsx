@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useLocalStorage } from "@uidotdev/usehooks";
-import { HostContext } from './context'
+import { GetJson } from './components/fetch';
 import { WhoAmI } from './components/WhoAmI';
 import { Feed } from './components/Feed';
 import { urlBase64ToUint8Array } from './utils';
@@ -14,14 +14,14 @@ const Problem = ({ children }) => (
   </div>
 );
 
-function requestPermission(host, setAsking, setPermissionError) {
+function requestPermission(pushServerHost, pushServerPubkey, setAsking, setPermissionError) {
   return async () => {
     setAsking(true);
     let err;
     try {
       await Notification.requestPermission();
-      const sub = await subscribeToPush();
-      const res = await fetch(`${host}/subscribe`, {
+      const sub = await subscribeToPush(pushServerPubkey);
+      const res = await fetch(`${pushServerHost}/subscribe`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ sub }),
@@ -46,20 +46,17 @@ function requestPermission(host, setAsking, setPermissionError) {
 }
 
 let autoreg;
-async function subscribeToPush() {
+async function subscribeToPush(pushServerPubkey) {
   const registration = await navigator.serviceWorker.register('/service-worker.js');
 
-  // auto-update in case they keep it open in a tab for a long time
+  // auto-update the service worker in case they keep it open in a tab for a long time
   clearInterval(autoreg);
   autoreg = setInterval(() => registration.update(), 4 * 60 * 60 * 1000); // every 4h
 
-  const subscribeOptions = {
+  return await registration.pushManager.subscribe({
+    pushServerPubkey: urlBase64ToUint8Array(pushServerPubkey),
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_PUSH_PUBKEY),
-  };
-  const pushSubscription = await registration.pushManager.subscribe(subscribeOptions);
-  console.log({ pushSubscription });
-  return pushSubscription;
+  });
 }
 
 async function verifyUser(host, token) {
@@ -73,7 +70,11 @@ async function verifyUser(host, token) {
 }
 
 function App() {
-  const [host, setHost] = useLocalStorage('spacedust-notif-host', 'http://localhost:8000');
+  const host = import.meta.env.VITE_NOTIFICATIONS_HOST;
+  const [pushPubkey, setPushPubkey] = useState(null);
+  const [whoamiHost, setWhoamiHost] = useState(null);
+
+  const [role, setRole] = useLocalStorage('spacedust-notif-role', 'anonymous');
   const [user, setUser] = useLocalStorage('spacedust-notif-user', null);
   const [verif, setVerif] = useState(null);
   const [asking, setAsking] = useState(false);
@@ -99,15 +100,26 @@ function App() {
   let hasPush = 'PushManager' in window;
   let notifPerm = Notification?.permission ?? 'default';
 
+  function Blah({ info }) {
+    useEffect(() => {
+      setPushPubkey(info.webPushPublicKey);
+      setWhoamiHost(info.whoamiHost);
+      setRole(info.role);
+    });
+    return <>Got server hello, updating app state&hellip;</>;
+  }
+
   let content;
   if (!hasSW) {
     content = <Problem>your browser does not support the background task needd to deliver notifications</Problem>;
   } else if (!hasPush) {
     content = <Problem>your browser does not support registering push notifications.</Problem>
+  } else if (!whoamiHost) {
+    content = <GetJson endpoint='/hello' ok={info => <Blah info={info} />} />
   } else if (!user) {
     if (verif === 'verifying') content = <p><em>verifying&hellip;</em></p>;
     else {
-      content = <WhoAmI onIdentify={onIdentify} />;
+      content = <WhoAmI onIdentify={onIdentify} origin={whoamiHost} />;
       if (verif === 'failed') {
         content = <><p>Sorry, failed to verify that identity. please let us know!</p>{content}</>;
       }
@@ -119,7 +131,7 @@ function App() {
         <p>To show notifications we need permission:</p>
         <p>
           <button
-            onClick={requestPermission(host, setAsking, setPermissionError)}
+            onClick={requestPermission(host, pushPubkey, setAsking, setPermissionError)}
             disabled={asking}
           >
             {asking ? <>Requesting&hellip;</> : <>Request permission</>}
@@ -140,7 +152,7 @@ function App() {
   }
 
   return (
-    <HostContext.Provider value={host}>
+    <>
       <header id="app-header">
         <h1>spacedust notifications <span className="demo">demo!</span></h1>
         {user && (
@@ -200,7 +212,7 @@ function App() {
           </label>
         </p>
       </div>
-    </HostContext.Provider>
+    </>
   )
 }
 

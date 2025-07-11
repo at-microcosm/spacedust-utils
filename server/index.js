@@ -169,7 +169,7 @@ const clearAccountCookie = res => res.setHeader('Set-Cookie', cookie.serialize(
   '',
   { ...COOKIE_BASE, expires: new Date(0) },
 ));
-const getAccountCookie = (req, res, appSecret) => {
+const getAccountCookie = (req, res, appSecret, adminDid) => {
   const cookies = cookie.parse(req.headers.cookie ?? '');
   const untrusted = cookies['verified-account'] ?? '';
   const json = cookieSig.unsign(untrusted, appSecret);
@@ -177,14 +177,26 @@ const getAccountCookie = (req, res, appSecret) => {
     clearAccountCookie(res);
     return null;
   }
+  let did, session;
   try {
-    const [did, session] = JSON.parse(json);
-    return [did, session];
+    [did, session] = JSON.parse(json);
   } catch (e) {
     console.warn('validated account cookie but failed to parse json', e);
     clearAccountCookie(res);
     return null;
   }
+
+  // not yet public!!
+  if (!did || did !== adminDid) {
+    res.setHeader('Content-Type', 'application/json');
+    res.writeHead(403);
+    clearAccountCookie(res).end(JSON.stringify({
+      reason: 'the spacedust notifications demo isn\'t public yet!',
+    }));
+    throw new Error('unauthorized');
+  }
+
+  return [did, session, did && (did === adminDid)];
 };
 
 // never EVER allow user-controllable input into fname (or just fix the path joining)
@@ -209,7 +221,27 @@ const handleFile = (fname, ftype) => async (req, res, replace = {}) => {
 const handleIndex = handleFile('index.html', 'text/html');
 const handleServiceWorker = handleFile('service-worker.js', 'application/javascript');
 
-const handleVerify = async (db, req, res, jwks, appSecret) => {
+const handleHello = async (db, req, res, secrets, whoamiHost, adminDid) => {
+  const resBase = { webPushPublicKey: secrets.pushKeys.publicKey, whoamiHost };
+  res.setHeader('Content-Type', 'application/json');
+  let info = getAccountCookie(req, res, secrets.appSecret, adminDid);
+  if (info) {
+    const [did, _session, isAdmin] = info;
+    const role = isAdmin ? 'admin' : 'public';
+    res
+      .setHeader('Content-Type', 'application/json')
+      .writeHead(200)
+      .end(JSON.stringify({ ...resBase, role, did }));
+  } else {
+    res
+      .setHeader('Content-Type', 'application/json')
+      .writeHead(200)
+      .end(JSON.stringify({ ...resBase, role: 'anonymous' }));
+  }
+};
+
+const handleVerify = async (db, req, res, whoamiHost, appSecret) => {
+  const jwks = jose.createRemoteJWKSet(new URL(`${whoamiHost}/.well-known/jwks.json`));
   const body = await getRequesBody(req);
   const { token } = JSON.parse(body);
   let did;
@@ -226,20 +258,9 @@ const handleVerify = async (db, req, res, jwks, appSecret) => {
 };
 
 const handleSubscribe = async (db, req, res, appSecret, adminDid) => {
-  let info = getAccountCookie(req, res, appSecret);
+  let info = getAccountCookie(req, res, appSecret, adminDid);
   if (!info) return res.writeHead(400).end(JSON.stringify({ reason: 'failed to verify cookie signature' }));
-  const [did, session] = info;
-
-  // not yet public!!
-  if (did !== adminDid) {
-    res.setHeader('Content-Type', 'application/json');
-    res.writeHead(403);
-
-    return clearAccountCookie(res).end(JSON.stringify({
-      reason: 'the spacedust notifications demo isn\'t public yet!',
-    }));
-  }
-
+  const [did, session, _isAdmin] = info;
   const body = await getRequesBody(req);
   const { sub } = JSON.parse(body);
   // addSub('did:plc:z72i7hdynmk6r22z27h6tvur', sub); // DELETEME @bsky.app (DEBUG)
@@ -247,15 +268,23 @@ const handleSubscribe = async (db, req, res, appSecret, adminDid) => {
   updateSubs(db);
   res.setHeader('Content-Type', 'application/json');
   res.writeHead(201);
-  res.end('{"oh": "hi"}');
+  res.end(JSON.stringify({ sup: 'hi' }));
 };
 
-const requestListener = (secrets, jwks, db, adminDid) => (req, res) => {
+const requestListener = (secrets, whoamiHost, db, adminDid) => (req, res) => {
   if (req.method === 'GET' && req.url === '/') {
     return handleIndex(req, res, { PUBKEY: secrets.pushKeys.publicKey });
   }
   if (req.method === 'GET' && req.url === '/service-worker.js') {
     return handleServiceWorker(req, res, { PUBKEY: secrets.pushKeys.publicKey });
+  }
+
+  if (req.method === 'OPTIONS' && req.url === '/hello') {
+    return res.writeHead(204, CORS_PERMISSIVE(req)).end();
+  }
+  if (req.method === 'GET' && req.url === '/hello') {
+    res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
+    return handleHello(db, req, res, secrets, whoamiHost, adminDid);
   }
 
   if (req.method === 'OPTIONS' && req.url === '/verify') {
@@ -264,7 +293,7 @@ const requestListener = (secrets, jwks, db, adminDid) => (req, res) => {
   }
   if (req.method === 'POST' && req.url === '/verify') {
     res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
-    return handleVerify(db, req, res, jwks, secrets.appSecret);
+    return handleVerify(db, req, res, whoamiHost, secrets.appSecret);
   }
 
   if (req.method === 'OPTIONS' && req.url === '/subscribe') {
@@ -293,7 +322,6 @@ const main = env => {
   );
 
   const whoamiHost = env.WHOAMI_HOST ?? 'https://who-am-i.microcosm.blue';
-  const jwks = jose.createRemoteJWKSet(new URL(`${whoamiHost}/.well-known/jwks.json`));
 
   const dbFilename = env.DB_FILE ?? './db.sqlite3';
   const initDb = process.argv.includes('--init-db');
@@ -307,7 +335,7 @@ const main = env => {
   const port = parseInt(env.PORT ?? 8000, 10);
 
   http
-    .createServer(requestListener(secrets, jwks, db, adminDid))
+    .createServer(requestListener(secrets, whoamiHost, db, adminDid))
     .listen(port, host, () => console.log(`listening at http://${host}:${port}`));
 };
 

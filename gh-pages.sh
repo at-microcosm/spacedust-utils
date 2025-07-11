@@ -6,6 +6,7 @@ git switch gh-pages
 git merge --no-ff main -m 'merge main'
 
 cd atproto-notifications
+export VITE_NOTIFICATIONS_HOST=https://notifications-demo-api.microcosm.blue
 npm run just-build
 cd ..
 
