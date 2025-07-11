@@ -1,5 +1,4 @@
 import { useContext, useEffect, useState } from 'react';
-import { HostContext } from '../context'
 
 const loadingDefault = () => (
   <em>Loading&hellip;</em>
@@ -52,7 +51,7 @@ async function getJson(url) {
 }
 
 export function GetJson({ endpoint, params, ...forFetch }) {
-  const host = useContext(HostContext);
+  const host = import.meta.env.VITE_NOTIFICATIONS_HOST;
   const url = new URL(endpoint, host);
   for (let [key, val] of Object.entries(params ?? {})) {
     url.searchParams.append(key, val);

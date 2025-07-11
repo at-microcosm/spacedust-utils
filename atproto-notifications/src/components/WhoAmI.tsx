@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 
-export function WhoAmI({ onIdentify, origin = 'http://127.0.0.1:9997' }) {
+export function WhoAmI({ onIdentify, origin }) {
   const frameRef = useRef(null);
 
   useEffect(() => {
