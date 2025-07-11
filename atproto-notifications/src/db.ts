@@ -98,7 +98,6 @@ export async function getNotifications(secondary, secondaryFilter) {
 
   let oc;
   if (!!secondary && secondary !== 'all' && !!secondaryFilter) {
-    console.log('with', secondary, secondaryFilter)
     oc = store
       .index(secondary)
       .openCursor(IDBKeyRange.only(secondaryFilter), 'prev');

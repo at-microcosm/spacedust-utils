@@ -20,9 +20,43 @@ export function Notification({ app, group, source, source_record, source_did, su
   }
   const lex = lexicons[appPrefix];
   icon = lex?.clients[0]?.icon;
-  const link = lex?.clients[0]?.notifications;
+  let link = lex?.clients[0]?.notifications;
   appName = lex?.name;
-  title = lex?.known_sources[source.slice(app.length + 1)] ?? source;
+  const sourceRemainder = source.slice(app.length + 1);
+  title = lex?.known_sources[sourceRemainder] ?? source;
+
+  let directLink;
+  if (subject.startsWith('did:')) {
+
+    const s = source_record.slice('at://'.length).split('/');
+    const [sDid, sCollection, sRest] = [s[0], s[1], s.slice(2)]; // yeah did might be a handle oh well
+
+    directLink = lex
+      ?.clients[0]
+      ?.direct_links[`did:${sourceRemainder}`]
+      ?.replace('{subject.did}', subject)
+      ?.replace('{source_record.did}', sDid)
+      ?.replace('{source_record.collection}', sCollection)
+      ?.replace('{source_record.rkey}', sRest.join('/') || null);
+
+  } else if (subject.startsWith('at://')) {
+    let s = subject.slice('at://'.length).split('/');
+    const [did, collection, rest] = [s[0], s[1], s.slice(2)]; // yeah did might be a handle oh well
+
+    s = source_record.slice('at://'.length).split('/');
+    const [sDid, sCollection, sRest] = [s[0], s[1], s.slice(2)]; // yeah did might be a handle oh well
+
+    directLink = lex
+      ?.clients[0]
+      ?.direct_links[`at_uri:${sourceRemainder}`]
+      ?.replace('{subject.did}', did)
+      ?.replace('{subject.collection}', collection)
+      ?.replace('{subject.rkey}', rest.join('/') || null)
+      ?.replace('{source_record.did}', sDid)
+      ?.replace('{source_record.collection}', sCollection)
+      ?.replace('{source_record.rkey}', sRest.join('/') || null);
+  }
+  link = directLink ?? link;
 
   const contents = (
     <>
