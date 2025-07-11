@@ -116,7 +116,7 @@ function App() {
     content = <Problem>your browser does not support registering push notifications.</Problem>
   } else if (!whoamiHost) {
     content = <GetJson endpoint='/hello' ok={info => <Blah info={info} />} />
-  } else if (!user) {
+  } else if (!user || user.role === 'anonymous') {
     if (verif === 'verifying') content = <p><em>verifying&hellip;</em></p>;
     else {
       content = <WhoAmI onIdentify={onIdentify} origin={whoamiHost} />;
