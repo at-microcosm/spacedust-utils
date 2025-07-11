@@ -188,11 +188,12 @@ const getAccountCookie = (req, res, appSecret, adminDid) => {
 
   // not yet public!!
   if (!did || did !== adminDid) {
-    res.setHeader('Content-Type', 'application/json');
-    res.writeHead(403);
-    clearAccountCookie(res).end(JSON.stringify({
-      reason: 'the spacedust notifications demo isn\'t public yet!',
-    }));
+    clearAccountCookie(res)
+      .setHeader('Content-Type', 'application/json')
+      .writeHead(403)
+      .end(JSON.stringify({
+        reason: 'the spacedust notifications demo isn\'t public yet!',
+      }));
     throw new Error('unauthorized');
   }
 
