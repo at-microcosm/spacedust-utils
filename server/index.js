@@ -83,10 +83,19 @@ async function push(db, pushSubscription, payload) {
 const isTorment = source => {
   try {
     const [nsid, ...rp] = source.split(':');
-    const parts = nsid.split('.');
-    const unreversed = parts.toReversed().join('.');
-    const app = psl.parse(unreversed)?.domain ?? 'unknown';
-    const appPrefix = app.split('.').toReversed().join('.');
+
+    let parts = nsid.split('.');
+    parts.reverse();
+    parts = parts.join('.');
+
+    // const unreversed = parts.toReversed().join('.');
+
+    const app = psl.parse(parts)?.domain ?? 'unknown';
+
+    let appPrefix = app.split('.');
+    appPrefix.reverse();
+    appPrefix = appPrefix.join('.')
+
     return source.slice(app.length + 1) in lexicons[appPrefix]?.torment_sources;
   } catch (e) {
     console.error('checking tormentedness failed, allowing through', e);
