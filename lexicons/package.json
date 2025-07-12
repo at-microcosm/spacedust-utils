@@ -4,5 +4,6 @@
   "description": "info about atproto apps",
   "main": "index.js",
   "scripts": {},
-  "author": ""
+  "author": "",
+  "type": "module"
 }

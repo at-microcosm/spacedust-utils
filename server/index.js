@@ -7,6 +7,8 @@ import http from 'http';
 import * as jose from 'jose';
 import cookie from 'cookie';
 import cookieSig from 'cookie-signature';
+import lexicons from 'lexicons';
+import psl from 'psl';
 import webpush from 'web-push';
 import WebSocket from 'ws';
 import { v4 as uuidv4 } from 'uuid';
