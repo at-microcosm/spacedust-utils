@@ -78,6 +78,20 @@ async function push(db, pushSubscription, payload) {
   db.updateLastPush(session);
 }
 
+const isTorment = source => {
+  try {
+    const [nsid, ...rp] = source.split(':');
+    const parts = nsid.split('.');
+    const unreversed = parts.toReversed().join('.');
+    const app = psl.parse(unreversed)?.domain ?? 'unknown';
+    const appPrefix = app.split('.').toReversed().join('.');
+    return source.slice(app.length + 1) in lexicons[appPrefix]?.torment_sources;
+  } catch (e) {
+    console.error('checking tormentedness failed, allowing through', e);
+    return false;
+  }
+}
+
 const handleDust = db => async event => {
   console.log('got', event.data);
   let data;
@@ -88,6 +102,10 @@ const handleDust = db => async event => {
     return;
   }
   const { link: { subject, source, source_record } } = data;
+  if (isTorment(source)) {
+    console.log('nope! not today,', source);
+    return;
+  }
   const timestamp = +new Date();
 
   let did;
