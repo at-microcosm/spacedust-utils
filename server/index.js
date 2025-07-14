@@ -7,6 +7,8 @@ import http from 'http';
 import * as jose from 'jose';
 import cookie from 'cookie';
 import cookieSig from 'cookie-signature';
+import lexicons from 'lexicons';
+import psl from 'psl';
 import webpush from 'web-push';
 import WebSocket from 'ws';
 import { v4 as uuidv4 } from 'uuid';
@@ -78,6 +80,29 @@ async function push(db, pushSubscription, payload) {
   db.updateLastPush(session);
 }
 
+const isTorment = source => {
+  try {
+    const [nsid, ...rp] = source.split(':');
+
+    let parts = nsid.split('.');
+    parts.reverse();
+    parts = parts.join('.');
+
+    // const unreversed = parts.toReversed().join('.');
+
+    const app = psl.parse(parts)?.domain ?? 'unknown';
+
+    let appPrefix = app.split('.');
+    appPrefix.reverse();
+    appPrefix = appPrefix.join('.')
+
+    return source.slice(app.length + 1) in lexicons[appPrefix]?.torment_sources;
+  } catch (e) {
+    console.error('checking tormentedness failed, allowing through', e);
+    return false;
+  }
+}
+
 const handleDust = db => async event => {
   console.log('got', event.data);
   let data;
@@ -88,6 +113,10 @@ const handleDust = db => async event => {
     return;
   }
   const { link: { subject, source, source_record } } = data;
+  if (isTorment(source)) {
+    console.log('nope! not today,', source);
+    return;
+  }
   const timestamp = +new Date();
 
   let did;
@@ -242,7 +271,7 @@ const handleHello = async (db, req, res, secrets, whoamiHost, adminDid) => {
   }
 };
 
-const handleVerify = async (db, req, res, whoamiHost, jwks, appSecret, adminDid) => {
+const handleVerify = async (db, req, res, secrets, whoamiHost, adminDid, jwks) => {
   const body = await getRequesBody(req);
   const { token } = JSON.parse(body);
   let did;
@@ -256,11 +285,15 @@ const handleVerify = async (db, req, res, whoamiHost, jwks, appSecret, adminDid)
   const isAdmin = did && did === adminDid;
   db.addAccount(did);
   const session = uuidv4();
-  setAccountCookie(res, did, session, appSecret);
+  setAccountCookie(res, did, session, secrets.appSecret);
   return res
     .setHeader('Content-Type', 'application/json')
     .writeHead(200)
-    .end(JSON.stringify({ did, role: isAdmin ? 'admin' : 'public' }));
+    .end(JSON.stringify({
+      did,
+      role: isAdmin ? 'admin' : 'public',
+      webPushPublicKey: secrets.pushKeys.publicKey,
+    }));
 };
 
 const handleSubscribe = async (db, req, res, appSecret, adminDid) => {
@@ -336,7 +369,7 @@ const requestListener = (secrets, jwks, whoamiHost, db, adminDid) => attempt((re
   }
   if (req.method === 'POST' && req.url === '/verify') {
     res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
-    return handleVerify(db, req, res, whoamiHost, jwks, secrets.appSecret, adminDid);
+    return handleVerify(db, req, res, secrets, whoamiHost, adminDid, jwks);
   }
 
   if (req.method === 'OPTIONS' && req.url === '/subscribe') {

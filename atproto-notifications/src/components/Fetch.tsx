@@ -66,3 +66,30 @@ export function GetJson({ endpoint, params, credentials, ...forFetch }) {
     />
   );
 }
+
+async function postJson(url, body, credentials) {
+  const opts = {
+    method: 'POST',
+    headers: {'Content-Type': 'applicaiton/json'},
+    body,
+  };
+  if (credentials) opts.credentials = 'include';
+  const res = await fetch(url, opts);
+  if (!res.ok) {
+    const m = await res.text();
+    throw new Error(`Failed to fetch: ${m}`);
+  }
+  return await res.json();
+}
+
+export function PostJson({ endpoint, data, credentials, ...forFetch }) {
+  const host = import.meta.env.VITE_NOTIFICATIONS_HOST;
+  const url = new URL(endpoint, host);
+  return (
+    <Fetch
+      using={postJson}
+      args={[url.toString(), JSON.stringify(data), credentials]}
+      {...forFetch}
+    />
+  );
+}
