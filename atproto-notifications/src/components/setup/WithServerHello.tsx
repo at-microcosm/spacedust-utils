@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { PushServerContext } from '../../context';
+import { UserContext, PushServerContext } from '../../context';
 import { WhoAmI } from '../WhoAmI';
+import { SecretPassword } from '../SecretPassword';
 import { GetJson, PostJson } from '../Fetch';
 import { Chrome } from './Chrome';
 
@@ -17,6 +18,13 @@ import { Chrome } from './Chrome';
 
 export function WithServerHello({ children }) {
   const [whoamiInfo, setWhoamiInfo] = useState(null);
+
+  const childrenFor = useCallback((did, role) => {
+    if (role === 'public') {
+      return <SecretPassword did={did} role={role} />;
+    }
+    return 'hiiiiiiii ' + role;
+  })
 
   return (
     <GetJson
@@ -38,7 +46,7 @@ export function WithServerHello({ children }) {
                 ok={({ did, role, webPushPublicKey }) => (
                   <Chrome user={{ did, role }}>
                     <PushServerContext.Provider value={webPushPublicKey}>
-                      {children}
+                      {childrenFor(did, role)}
                     </PushServerContext.Provider>
                   </Chrome>
                 )}
@@ -48,7 +56,7 @@ export function WithServerHello({ children }) {
           return (
             <Chrome user={{ did, role }}>
               <PushServerContext.Provider value={webPushPublicKey}>
-                {children}
+                {childrenFor(did, role)}
               </PushServerContext.Provider>
             </Chrome>
           );

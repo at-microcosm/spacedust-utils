@@ -1,6 +1,8 @@
 create table accounts (
-  did        text primary key,
-  first_seen text not null default CURRENT_TIMESTAMP,
+  did             text primary key,
+  first_seen      text not null default CURRENT_TIMESTAMP,
+  role            text null,
+  secret_password text null,
 
   check(did like 'did:%')
 ) strict;

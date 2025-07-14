@@ -14,6 +14,7 @@ export class DB {
   #stmt_update_push_sub;
   #stmt_delete_push_sub;
   #stmt_get_push_info;
+  #stmt_set_role;
   #transactionally;
   #db;
 
@@ -42,6 +43,7 @@ export class DB {
 
     this.#stmt_get_account = db.prepare(
       `select a.first_seen,
+              a.role,
               count(*) as total_subs
          from accounts a
          left outer join push_subs p on (p.account_did = a.did)
@@ -87,11 +89,21 @@ export class DB {
          from push_subs
         where account_did = ?`);
 
+    this.#stmt_set_role = db.prepare(
+      `update accounts
+          set role = ?,
+              secret_password = ?
+        where did = ?`);
+
     this.#transactionally = t => db.transaction(t).immediate();
   }
 
   addAccount(did) {
     this.#stmt_insert_account.run(did);
+  }
+
+  getAccount(did) {
+    return this.#stmt_get_account.get(did);
   }
 
   addPushSub(did, session, sub) {
@@ -121,5 +133,12 @@ export class DB {
 
   deleteSub(session) {
     this.#stmt_delete_push_sub.run(session);
+  }
+
+  setRole(did, role, secret_password) {
+    let res = this.#stmt_set_role.run(role, secret_password, did);
+    if (res.changes === 0) {
+      throw new Error('no changes');
+    }
   }
 }
