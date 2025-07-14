@@ -271,7 +271,7 @@ const handleHello = async (db, req, res, secrets, whoamiHost, adminDid) => {
   }
 };
 
-const handleVerify = async (db, req, res, whoamiHost, jwks, appSecret, adminDid) => {
+const handleVerify = async (db, req, res, secrets, whoamiHost, adminDid, jwks) => {
   const body = await getRequesBody(req);
   const { token } = JSON.parse(body);
   let did;
@@ -285,11 +285,15 @@ const handleVerify = async (db, req, res, whoamiHost, jwks, appSecret, adminDid)
   const isAdmin = did && did === adminDid;
   db.addAccount(did);
   const session = uuidv4();
-  setAccountCookie(res, did, session, appSecret);
+  setAccountCookie(res, did, session, secrets.appSecret);
   return res
     .setHeader('Content-Type', 'application/json')
     .writeHead(200)
-    .end(JSON.stringify({ did, role: isAdmin ? 'admin' : 'public' }));
+    .end(JSON.stringify({
+      did,
+      role: isAdmin ? 'admin' : 'public',
+      webPushPublicKey: secrets.pushKeys.publicKey,
+    }));
 };
 
 const handleSubscribe = async (db, req, res, appSecret, adminDid) => {
@@ -365,7 +369,7 @@ const requestListener = (secrets, jwks, whoamiHost, db, adminDid) => attempt((re
   }
   if (req.method === 'POST' && req.url === '/verify') {
     res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
-    return handleVerify(db, req, res, whoamiHost, jwks, secrets.appSecret, adminDid);
+    return handleVerify(db, req, res, secrets, whoamiHost, adminDid, jwks);
   }
 
   if (req.method === 'OPTIONS' && req.url === '/subscribe') {

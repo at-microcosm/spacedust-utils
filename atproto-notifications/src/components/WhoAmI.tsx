@@ -19,8 +19,8 @@ export function WhoAmI({ onIdentify, origin }) {
     <iframe
       src={`${origin}/prompt`}
       ref={frameRef}
-      height="160"
-      width="320"
+      height="180"
+      width="360"
       style={{
         border: 'none',
         display: 'block',
