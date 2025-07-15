@@ -20,13 +20,6 @@ import { DB } from './db.js';
 // (this is only used when there are no subscribers registered)
 const DUMMY_DID = 'did:plc:zzzzzzzzzzzzzzzzzzzzzzzz';
 
-const CORS_PERMISSIVE = req => ({
-  'Access-Control-Allow-Origin': req.headers.origin, // DANGERRRRR
-  'Access-Control-Allow-Methods': 'OPTIONS, GET, POST',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Credentials': 'true', // TODO: *def* want to restrict allowed origin, probably
-});
-
 let spacedust;
 let spacedustEverStarted = false;
 
@@ -341,7 +334,7 @@ const handleLogout = async (db, req, res, appSecret) => {
   res.end(JSON.stringify({ sup: 'bye' }));
 }
 
-const handleOpenSesame = async (db, req, res, appSecret) => {
+const handleTopSecret = async (db, req, res, appSecret) => {
   let info = getAccountCookie(req, res, appSecret, null, true);
   if (!info) return res.writeHead(400).end(JSON.stringify({ reason: 'failed to verify cookie signature' }));
   const [did, _session, _isAdmin] = info;
@@ -364,63 +357,47 @@ const attempt = listener => async (req, res) => {
   }
 };
 
-const requestListener = (secrets, jwks, whoamiHost, db, adminDid) => attempt((req, res) => {
+const withCors = (allowedOrigin, listener) => {
+  const corsHeaders = new Headers({
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'OPTIONS, GET, POST',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Credentials': 'true',
+  });
+  return (req, res) => {
+    res.setHeaders(corsHeaders);
+    if (req.method === 'OPTIONS') {
+      return res.writeHead(204).end();
+    }
+    return listener(req, res);
+  }
+}
+
+const requestListener =
+  (secrets, jwks, allowedOrigin, whoamiHost, db, adminDid) =>
+  attempt(withCors(allowedOrigin, (req, res) => {
+
   if (req.method === 'GET' && req.url === '/') {
     return handleIndex(req, res, { PUBKEY: secrets.pushKeys.publicKey });
   }
-  if (req.method === 'GET' && req.url === '/service-worker.js') {
-    return handleServiceWorker(req, res, { PUBKEY: secrets.pushKeys.publicKey });
-  }
-
-  if (req.method === 'OPTIONS' && req.url === '/hello') {
-    return res.writeHead(204, CORS_PERMISSIVE(req)).end();
-  }
   if (req.method === 'GET' && req.url === '/hello') {
-    res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
     return handleHello(db, req, res, secrets, whoamiHost, adminDid);
   }
-
-  if (req.method === 'OPTIONS' && req.url === '/verify') {
-    // TODO: probably restrict the origin
-    return res.writeHead(204, CORS_PERMISSIVE(req)).end();
-  }
   if (req.method === 'POST' && req.url === '/verify') {
-    res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
     return handleVerify(db, req, res, secrets, whoamiHost, adminDid, jwks);
   }
-
-  if (req.method === 'OPTIONS' && req.url === '/subscribe') {
-    // TODO: probably restrict the origin
-    return res.writeHead(204, CORS_PERMISSIVE(req)).end();
-  }
   if (req.method === 'POST' && req.url === '/subscribe') {
-    res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
     return handleSubscribe(db, req, res, secrets.appSecret, adminDid);
   }
-
-  if (req.method === 'OPTIONS' && req.url === '/logout') {
-    // TODO: probably restrict the origin
-    return res.writeHead(204, CORS_PERMISSIVE(req)).end();
-  }
   if (req.method === 'POST' && req.url === '/logout') {
-    res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
     return handleLogout(db, req, res, secrets.appSecret);
   }
-
-  if (req.method === 'OPTIONS' && req.url === '/super-top-secret-access') {
-    // TODO: probably restrict the origin
-    return res.writeHead(204, CORS_PERMISSIVE(req)).end();
-  }
   if (req.method === 'POST' && req.url === '/super-top-secret-access') {
-    res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
-    return handleOpenSesame(db, req, res, secrets.appSecret);
+    return handleTopSecret(db, req, res, secrets.appSecret);
   }
 
-  res
-    .setHeaders(new Headers(CORS_PERMISSIVE(req)))
-    .writeHead(404)
-    .end('not found (sorry)');
-});
+  res.writeHead(404).end('not found (sorry)');
+}));
 
 const main = env => {
   if (!env.ADMIN_DID) throw new Error('ADMIN_DID is required to run');
@@ -448,9 +425,15 @@ const main = env => {
   const host = env.HOST ?? 'localhost';
   const port = parseInt(env.PORT ?? 8000, 10);
 
+  const allowedOrigin = env.ALLOWED_ORIGIN ?? 'http://127.0.0.1:5173';
+
   http
-    .createServer(requestListener(secrets, jwks, whoamiHost, db, adminDid))
-    .listen(port, host, () => console.log(`listening at http://${host}:${port}`));
+    .createServer(requestListener(secrets, jwks, allowedOrigin, whoamiHost, db, adminDid))
+    .listen(
+      port,
+      host,
+      () => console.log(`listening at http://${host}:${port} with allowed origin: ${allowedOrigin}`),
+    );
 };
 
 main(process.env);
