@@ -1,19 +1,21 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from "react-router";
-import './index.css'
-import { App } from './App.tsx'
+import './index.css';
+import { App } from './App';
+import { Feed } from './pages/Feed';
+import { Admin } from './pages/Admin';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App>
-      <BrowserRouter>
+    <BrowserRouter>
+      <App>
         <Routes>
-          {/*<Route index element={<Home />} />*/}
-          {/*<Route path="/status" element={<Status />} />*/}
+          <Route index element={<Feed />} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
-      </BrowserRouter>
-    </App>
+      </App>
+    </BrowserRouter>
   </StrictMode>,
 );
 

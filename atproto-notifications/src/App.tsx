@@ -1,12 +1,11 @@
 import { useCallback, useState, useEffect } from 'react';
+import { Outlet } from 'react-router';
 import { useLocalStorage } from "@uidotdev/usehooks";
 import { GetJson } from './components/fetch';
 import { WhoAmI } from './components/WhoAmI';
-import { Feed } from './components/Feed';
 import { WithFeatureChecks } from './components/setup/WithFeatureChecks';
 import { WithServiceWorker } from './components/setup/WithServiceWorker';
 import { WithServerHello } from './components/setup/WithServerHello';
-import { UserContext } from './context';
 import { WithNotificationPermission } from './components/setup/WithNotificationPermission';
 import { WithPushSubscription } from './components/setup/WithPushSubscription';
 import { urlBase64ToUint8Array } from './utils';
@@ -22,7 +21,7 @@ export function App({ children }) {
         <WithServiceWorker>
           <WithNotificationPermission>
             <WithPushSubscription>
-              <Feed />
+              {children}
             </WithPushSubscription>
           </WithNotificationPermission>
         </WithServiceWorker>

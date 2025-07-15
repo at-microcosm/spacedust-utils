@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { UserContext, PushServerContext } from '../../context';
+import { RoleContext, PushServerContext } from '../../context';
 import { WhoAmI } from '../WhoAmI';
 import { SecretPassword } from '../SecretPassword';
 import { GetJson, PostJson } from '../Fetch';
@@ -71,7 +71,9 @@ export function WithServerHello({ children }) {
                 ok={({ did, role, webPushPublicKey }) => (
                   <Chrome user={{ did, role }} onLogout={handleLogout}>
                     <PushServerContext.Provider value={webPushPublicKey}>
-                      {childrenFor(did, role, children)}
+                      <RoleContext.Provider value={role}>
+                        {childrenFor(did, role, children)}
+                      </RoleContext.Provider>
                     </PushServerContext.Provider>
                   </Chrome>
                 )}
@@ -81,7 +83,9 @@ export function WithServerHello({ children }) {
           return (
             <Chrome user={{ did, role }} onLogout={handleLogout}>
               <PushServerContext.Provider value={webPushPublicKey}>
-                {childrenFor(did, role, children)}
+                <RoleContext.Provider value={role}>
+                  {childrenFor(did, role, children)}
+                </RoleContext.Provider>
               </PushServerContext.Provider>
             </Chrome>
           );
