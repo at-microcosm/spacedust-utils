@@ -259,7 +259,7 @@ const handleHello = async (db, req, res, secrets, whoamiHost, adminDid) => {
   let info = getAccountCookie(req, res, secrets.appSecret, adminDid, true);
   if (info) {
     const [did, _session, isAdmin] = info;
-    let { role } = db.getAccount(did);
+    let role = db.getAccount(did)?.role;
     role = isAdmin ? 'admin' : (role ?? 'public');
     res
       .setHeader('Content-Type', 'application/json')
