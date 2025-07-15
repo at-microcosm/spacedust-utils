@@ -132,7 +132,8 @@ const handleDust = db => async event => {
 
   const subs = db.getSubsByDid(did);
   const payload = JSON.stringify({ subject, source, source_record, timestamp });
-  await Promise.all(subs.map(pushSubscription => push(db, pushSubscription, payload)));
+  let res = await Promise.all(subs.map(pushSubscription => push(db, pushSubscription, payload)));
+  console.log('send results', res);
 };
 
 const connectSpacedust = (db, host) => {
