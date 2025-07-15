@@ -138,7 +138,7 @@ export class DB {
   setRole(did, role, secret_password) {
     let res = this.#stmt_set_role.run(role, secret_password, did);
     if (res.changes === 0) {
-      throw new Error('no changes');
+      console.warn('set role: no changes');
     }
   }
 }
