@@ -11,11 +11,11 @@ export function WithServerHello({ children }) {
   const [whoamiKey, setWhoamiKey] = useState(0);
   const [whoamiInfo, setWhoamiInfo] = useState(null);
 
-  const childrenFor = useCallback((did, role) => {
+  const childrenFor = useCallback((did, role, parentChildren) => {
     if (role === 'public') {
       return <SecretPassword did={did} role={role} />;
     }
-    return 'hiiiiiiii ' + role;
+    return parentChildren;
   })
 
   const reloadConnect = useCallback(e => {
@@ -71,7 +71,7 @@ export function WithServerHello({ children }) {
                 ok={({ did, role, webPushPublicKey }) => (
                   <Chrome user={{ did, role }} onLogout={handleLogout}>
                     <PushServerContext.Provider value={webPushPublicKey}>
-                      {childrenFor(did, role)}
+                      {childrenFor(did, role, children)}
                     </PushServerContext.Provider>
                   </Chrome>
                 )}
@@ -81,7 +81,7 @@ export function WithServerHello({ children }) {
           return (
             <Chrome user={{ did, role }} onLogout={handleLogout}>
               <PushServerContext.Provider value={webPushPublicKey}>
-                {childrenFor(did, role)}
+                {childrenFor(did, role, children)}
               </PushServerContext.Provider>
             </Chrome>
           );
