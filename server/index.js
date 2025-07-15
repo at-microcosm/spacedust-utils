@@ -299,7 +299,7 @@ const handleVerify = async (db, req, res, secrets, whoamiHost, adminDid, jwks) =
 };
 
 const handleSubscribe = async (db, req, res, appSecret, adminDid) => {
-  let info = getAccountCookie(req, res, appSecret, adminDid);
+  let info = getAccountCookie(req, res, appSecret, adminDid, true);
   if (!info) return res.writeHead(400).end(JSON.stringify({ reason: 'failed to verify cookie signature' }));
   const [did, session, _isAdmin] = info;
   const body = await getRequesBody(req);
@@ -334,6 +334,7 @@ const handleLogout = async (db, req, res, appSecret) => {
       .end(JSON.stringify({ reason: 'failed to register subscription' }));
   }
   updateSubs(db);
+  clearAccountCookie(res);
   res.setHeader('Content-Type', 'application/json');
   res.writeHead(201);
   res.end(JSON.stringify({ sup: 'bye' }));

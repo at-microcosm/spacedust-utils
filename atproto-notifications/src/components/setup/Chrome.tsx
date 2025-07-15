@@ -1,6 +1,6 @@
 import { Handle } from '../User';
 
-export function Chrome({ user, children }) {
+export function Chrome({ user, onLogout, children }) {
   const content = children;
   const logout = () => null;
   return (
@@ -13,8 +13,7 @@ export function Chrome({ user, children }) {
               <span className="handle">
                 <Handle did={user.did} />
               </span>
-              {/* TODO: clear *all* info on logout */}
-              <button className="subtle bad" onClick={logout}>&times;</button>
+              <button className="subtle bad" onClick={onLogout}>&times;</button>
             </p>
           </div>
         )}
