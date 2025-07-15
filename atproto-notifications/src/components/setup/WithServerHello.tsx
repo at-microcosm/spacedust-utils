@@ -17,6 +17,7 @@ import { Chrome } from './Chrome';
   // });
 
 export function WithServerHello({ children }) {
+  const [whoamiKey, setWhoamiKey] = useState(0);
   const [whoamiInfo, setWhoamiInfo] = useState(null);
 
   const childrenFor = useCallback((did, role) => {
@@ -25,6 +26,11 @@ export function WithServerHello({ children }) {
     }
     return 'hiiiiiiii ' + role;
   })
+
+  const reloadConnect = useCallback(e => {
+    e.preventDefault();
+    setWhoamiKey(n => n + 1);
+  });
 
   return (
     <GetJson
@@ -36,7 +42,14 @@ export function WithServerHello({ children }) {
           return whoamiInfo === null
             ? (
               <Chrome>
-                <WhoAmI origin={whoamiHost} onIdentify={setWhoamiInfo} />
+                <WhoAmI
+                  key={whoamiKey}
+                  origin={whoamiHost}
+                  onIdentify={setWhoamiInfo}
+                />
+                <p style={{fontSize: '0.8rem'}}>
+                  <a href="#" onClick={reloadConnect}>Reload connect prompt</a>
+                </p>
               </Chrome>
             ) : (
               <PostJson

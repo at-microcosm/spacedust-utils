@@ -17,7 +17,8 @@ export function WhoAmI({ onIdentify, origin }) {
 
   return (
     <iframe
-      src={`${origin}/prompt`}
+      src={`${origin}/prompt?app=notifications.microcosm.blue`}
+      referrerpolicy="strict-origin"
       ref={frameRef}
       height="180"
       width="360"
