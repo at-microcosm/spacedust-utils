@@ -1,0 +1,13 @@
+{
+  "short_name": "Spacedust",
+  "name": "Spacedust notifications",
+  "icons": [{
+    "src": "images/icon-7-192.png",
+    "type": "image/png",
+    "sizes": "192x192"
+  }],
+  "start_url": "/",
+  "display": "fullscreen",
+  "background_color": "#faebd2",
+  "theme_color": "#faebd2"
+}
