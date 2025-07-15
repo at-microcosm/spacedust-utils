@@ -198,6 +198,7 @@ const clearAccountCookie = res => res.setHeader('Set-Cookie', cookie.serialize(
   '',
   { ...COOKIE_BASE, expires: new Date(0) },
 ));
+
 const getAccountCookie = (req, res, appSecret, adminDid, noDidCheck = false) => {
   const cookies = cookie.parse(req.headers.cookie ?? '');
   const untrusted = cookies['verified-account'] ?? '';
@@ -255,10 +256,11 @@ const handleServiceWorker = handleFile('service-worker.js', 'application/javascr
 const handleHello = async (db, req, res, secrets, whoamiHost, adminDid) => {
   const resBase = { webPushPublicKey: secrets.pushKeys.publicKey, whoamiHost };
   res.setHeader('Content-Type', 'application/json');
-  let info = getAccountCookie(req, res, secrets.appSecret, adminDid);
+  let info = getAccountCookie(req, res, secrets.appSecret, adminDid, true);
   if (info) {
     const [did, _session, isAdmin] = info;
-    const role = isAdmin ? 'admin' : 'public';
+    let { role } = db.getAccount(did);
+    role = isAdmin ? 'admin' : (role ?? 'public');
     res
       .setHeader('Content-Type', 'application/json')
       .writeHead(200)
@@ -335,7 +337,20 @@ const handleLogout = async (db, req, res, appSecret) => {
   res.setHeader('Content-Type', 'application/json');
   res.writeHead(201);
   res.end(JSON.stringify({ sup: 'bye' }));
+}
 
+const handleOpenSesame = async (db, req, res, appSecret) => {
+  let info = getAccountCookie(req, res, appSecret, null, true);
+  if (!info) return res.writeHead(400).end(JSON.stringify({ reason: 'failed to verify cookie signature' }));
+  const [did, _session, _isAdmin] = info;
+  const body = await getRequesBody(req);
+  const { secret_password } = JSON.parse(body);
+  console.log({ secret_password });
+  const role = 'early';
+  db.setRole(did, role, secret_password);
+  res.setHeader('Content-Type', 'application/json')
+    .writeHead(200)
+    .end('"heyyy"');
 }
 
 const attempt = listener => async (req, res) => {
@@ -388,6 +403,15 @@ const requestListener = (secrets, jwks, whoamiHost, db, adminDid) => attempt((re
   if (req.method === 'POST' && req.url === '/logout') {
     res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
     return handleLogout(db, req, res, secrets.appSecret);
+  }
+
+  if (req.method === 'OPTIONS' && req.url === '/super-top-secret-access') {
+    // TODO: probably restrict the origin
+    return res.writeHead(204, CORS_PERMISSIVE(req)).end();
+  }
+  if (req.method === 'POST' && req.url === '/super-top-secret-access') {
+    res.setHeaders(new Headers(CORS_PERMISSIVE(req)));
+    return handleOpenSesame(db, req, res, secrets.appSecret);
   }
 
   res
