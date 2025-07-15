@@ -1,4 +1,5 @@
 import { Handle } from '../User';
+import './Chrome.css';
 
 export function Chrome({ user, onLogout, children }) {
   const content = children;
@@ -12,6 +13,11 @@ export function Chrome({ user, onLogout, children }) {
             <p>
               <span className="handle">
                 <Handle did={user.did} />
+                {user.role !== 'public' && (
+                  <span className="chrome-role-tag">
+                    {user.role}
+                  </span>
+                )}
               </span>
               <button className="subtle bad" onClick={onLogout}>&times;</button>
             </p>
