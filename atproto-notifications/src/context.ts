@@ -1,4 +1,4 @@
 import { createContext } from 'react';
 
-export const UserContext = createContext('light');
+export const RoleContext = createContext('public');
 export const PushServerContext = createContext(null);

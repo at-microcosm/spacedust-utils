@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getNotifications, getSecondary } from '../db';
-import { ButtonGroup } from './Buttons';
-import { Notification } from './Notification';
+import { ButtonGroup } from '../components/Buttons';
+import { Notification } from '../components/Notification';
 import psl from 'psl';
 import lexicons from 'lexicons';
 

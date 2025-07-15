@@ -1,0 +1,13 @@
+.chrome-role-tag {
+  font-size: 0.6rem;
+  /*background: #555;*/
+  color: #8c0;
+  border: 0.5px solid #690;
+  display: inline-block;
+  border-radius: 0.5em;
+  padding: 0.1em 0.2em 0.15em;
+  line-height: 1;
+  vertical-align: top;
+  margin-left: -0.333rem;
+  transform: rotate(13deg);
+}

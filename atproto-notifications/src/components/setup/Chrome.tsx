@@ -1,4 +1,6 @@
+import { Link } from 'react-router';
 import { Handle } from '../User';
+import './Chrome.css';
 
 export function Chrome({ user, onLogout, children }) {
   const content = children;
@@ -6,12 +8,25 @@ export function Chrome({ user, onLogout, children }) {
   return (
     <>
       <header id="app-header">
-        <h1>spacedust notifications&nbsp;<span className="demo">demo!</span></h1>
+        <h1>
+          <Link to="/" className="inherit-font">
+            spacedust notifications&nbsp;<span className="demo">demo!</span>
+          </Link>
+        </h1>
         {user && (
           <div className="current-user">
             <p>
               <span className="handle">
                 <Handle did={user.did} />
+                {user.role !== 'public' && (
+                  <span className="chrome-role-tag">
+                    {user.role === 'admin' ? (
+                      <Link to="/admin" className="inherit-font">{user.role}</Link>
+                    ) : (
+                      <>{user.role}</>
+                    )}
+                  </span>
+                )}
               </span>
               <button className="subtle bad" onClick={onLogout}>&times;</button>
             </p>
