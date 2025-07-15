@@ -334,6 +334,7 @@ const handleLogout = async (db, req, res, appSecret) => {
       .end(JSON.stringify({ reason: 'failed to register subscription' }));
   }
   updateSubs(db);
+  clearAccountCookie(res);
   res.setHeader('Content-Type', 'application/json');
   res.writeHead(201);
   res.end(JSON.stringify({ sup: 'bye' }));
