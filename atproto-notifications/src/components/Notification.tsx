@@ -33,7 +33,7 @@ export function Notification({ app, group, source, source_record, source_did, su
 
     directLink = lex
       ?.clients[0]
-      ?.direct_links[`did:${sourceRemainder}`]
+      ?.direct_links?.[`did:${sourceRemainder}`]
       ?.replace('{subject.did}', subject)
       ?.replace('{source_record.did}', sDid)
       ?.replace('{source_record.collection}', sCollection)
