@@ -20,6 +20,9 @@ mkpage () {
   cp docs/index.html "docs${page}/index.html"
 }
 
+mkpage /admin
+mkpage /early
+
 git add docs
 git commit -m 'update build'
 git push
