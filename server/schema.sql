@@ -1,4 +1,4 @@
-create table accounts (
+create table if not exists accounts (
   did             text primary key,
   first_seen      text not null default CURRENT_TIMESTAMP,
   role            text null,
@@ -7,7 +7,7 @@ create table accounts (
   check(did like 'did:%')
 ) strict;
 
-create table push_subs (
+create table if not exists push_subs (
   session      text primary key, -- uuidv4, bound to signed browser cookie
   account_did  text not null,
   subscription text not null, -- from browser, treat as opaque blob
@@ -19,4 +19,12 @@ create table push_subs (
 
   foreign key(account_did) references accounts(did)
     on delete cascade on update cascade
+) strict;
+
+create table if not exists top_secret_passwords (
+  password text primary key,
+  added    text not null default CURRENT_TIMESTAMP,
+  expired  text null, -- timestamp
+
+  check(length(password) >= 3)
 ) strict;

@@ -4,10 +4,12 @@ import { PostJson } from './Fetch';
 export function SecretPassword({ did, role }) {
   const [begun, setBegun] = useState(false);
   const [pw, setPw] = useState('');
+  const [submission, setSubmission] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = useCallback(e => {
     e.preventDefault();
+    setSubmission(n => n + 1);
     setSubmitting(true);
   })
 
@@ -18,6 +20,7 @@ export function SecretPassword({ did, role }) {
 
       {submitting ? (
         <PostJson
+          key={submission}
           endpoint="/super-top-secret-access"
           data={{ secret_password: pw }}
           credentials
