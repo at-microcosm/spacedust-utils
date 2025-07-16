@@ -47,14 +47,14 @@ const main = env => {
   const db = new DB(dbFilename, initDb);
 
   const spacedustHost = env.SPACEDUST_HOST ?? 'wss://spacedust.microcosm.blue';
-  const updateSubs = connectSpacedust(db, spacedustHost);
+  const { updateSubs, push } = connectSpacedust(db, spacedustHost);
 
   const host = env.HOST ?? 'localhost';
   const port = parseInt(env.PORT ?? 8000, 10);
 
   const allowedOrigin = env.ALLOWED_ORIGIN ?? 'http://127.0.0.1:5173';
 
-  server(secrets, jwks, allowedOrigin, whoamiHost, db, updateSubs, adminDid).listen(
+  server(secrets, jwks, allowedOrigin, whoamiHost, db, updateSubs, push, adminDid).listen(
     port,
     host,
     () => console.log(`listening at http://${host}:${port} with allowed origin: ${allowedOrigin}`),
