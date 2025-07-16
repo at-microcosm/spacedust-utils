@@ -22,6 +22,8 @@ export function Chrome({ user, onLogout, children }) {
                   <span className="chrome-role-tag">
                     {user.role === 'admin' ? (
                       <Link to="/admin" className="inherit-font">{user.role}</Link>
+                    ) : user.role === 'early' ? (
+                      <Link to="/early" className="inherit-font">{user.role}</Link>
                     ) : (
                       <>{user.role}</>
                     )}
