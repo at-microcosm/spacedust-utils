@@ -77,9 +77,19 @@ async function postJson(url, body, credentials) {
   const res = await fetch(url, opts);
   if (!res.ok) {
     const m = await res.text();
+    let reason
+    try {
+      reason = JSON.parse(m)?.reason;
+    } catch (err) {};
+    if (reason) throw reason;
     throw new Error(`Failed to fetch: ${m}`);
   }
-  return await res.json();
+  try {
+    return await res.json();
+  } catch (e) {
+    if ([201, 204].includes(res.status)) return null;
+    throw e;
+  }
 }
 
 export function PostJson({ endpoint, data, credentials, ...forFetch }) {

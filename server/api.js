@@ -8,13 +8,16 @@ import { v4 as uuidv4 } from 'uuid';
 const replyJson = (res, code) => res.setHeader('Content-Type', 'application/json').writeHead(code);
 const errJson = (code, reason) => res => replyJson(res, code).end(JSON.stringify({ reason }));
 
+const ok = (res, data) => replyJson(res, 200).end(JSON.stringify(data));
+const gotIt = res => res.writeHead(201).end();
+const okBye = res => res.writeHead(204).end();
+const notModified = res => res.writeHead(304).end();
 const badRequest = (res, reason) => errJson(400, reason)(res);
 const forbidden = errJson(401, 'forbidden');
 const unauthorized = errJson(403, 'unauthorized');
 const notFound = errJson(404, 'not found');
+const conflict = errJson(409, 'conflict');
 const serverError = errJson(500, 'internal server error');
-const okBye = res => res.writeHead(204).end();
-const ok = (res, data) => replyJson(res, 200).end(JSON.stringify(data));
 
 const getRequesBody = async req => new Promise((resolve, reject) => {
   let body = '';
@@ -66,6 +69,7 @@ const getUser = (req, res, db, appSecret, adminDid) => {
   return { did, session, role };
 };
 
+/////// handlers
 
 // never EVER allow user-controllable input into fname (or just fix the path joining)
 const handleFile = (fname, ftype) => async (req, res, replace = {}) => {
@@ -126,7 +130,7 @@ const handleSubscribe = async (db, user, req, res, updateSubs) => {
     return serverError(res);
   }
   updateSubs(db);
-  return okBye(res);
+  return gotIt(res);
 };
 
 const handleLogout = async (db, user, req, res, appSecret, updateSubs) => {
@@ -139,21 +143,67 @@ const handleLogout = async (db, user, req, res, appSecret, updateSubs) => {
   updateSubs(db);
   clearAccountCookie(res);
   return okBye(res);
-}
+};
 
 const handleTopSecret = async (db, user, req, res) => {
+  console.log('ts');
+  // TODO: succeed early if they're already in?
   const body = await getRequesBody(req);
   const { secret_password } = JSON.parse(body);
-  console.log({ secret_password });
+  const { did } = user;
   const role = 'early';
-  db.setRole(user.did, role, secret_password);
-  return okBye(res);
-}
+  console.log('going with', {did, role, secret_password});
+  const updated = db.setRole({ did, role, secret_password });
+  console.log('updated?', updated);
+  if (updated) {
+    return okBye(res);
+  } else {
+    return forbidden(res);
+  }
+};
+
+const handleListSecrets = async (db, res) => {
+  const secrets = db.getSecrets();
+  return ok(res, secrets);
+};
+
+const handleAddSecret = async (db, req, res) => {
+  const body = await getRequesBody(req);
+  const { secret_password } = JSON.parse(body);
+  try {
+    db.addTopSecret(secret_password);
+  } catch (e) {
+    if (['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_CHECK'].includes(e.code)) {
+      return conflict(res);
+    }
+    throw e;
+  }
+  return gotIt(res);
+};
+
+const handleExpireSecret = async (db, req, res) => {
+  const body = await getRequesBody(req);
+  const { secret_password } = JSON.parse(body);
+  if (db.expireTopSecret(secret_password)) {
+    return gotIt(res);
+  } else {
+    return notModified(res);
+  }
+};
+
+const handleTopSecretAccounts = async (db, req, res, searchParams) => {
+  const accounts = db.getSecretAccounts(searchParams.get('secret_password'));
+  return ok(res, accounts);
+};
+
+
+/////// end handlers
 
 const attempt = listener => async (req, res) => {
   console.log(`-> ${req.method} ${req.url}`);
   try {
-    return await listener(req, res);
+    await listener(req, res);
+    console.log(` <-${req.method} ${req.url} (${res.statusCode})`);
   } catch (e) {
     console.error('listener errored:', e);
     return serverError(res);
@@ -178,37 +228,55 @@ const withCors = (allowedOrigin, listener) => {
 
 export const server = (secrets, jwks, allowedOrigin, whoamiHost, db, updateSubs, adminDid) => {
   const handler = (req, res) => {
+    // don't love this but whatever
+    const { pathname, searchParams } = new URL(`http://localhost${req.url}`);
+    const { method } = req;
+
     // public (we're doing fall-through auth, what could go wrong)
-    if (req.method === 'GET' && req.url === '/') {
+    if (method === 'GET' && pathname === '/') {
       return handleIndex(req, res, {});
     }
-    if (req.method === 'POST' && req.url === '/verify') {
+    if (method === 'POST' && pathname === '/verify') {
       return handleVerify(db, req, res, secrets, jwks, adminDid);
     }
 
     // semi-public
     const user = getUser(req, res, db, secrets.appSecret, adminDid);
-    if (req.method === 'GET' && req.url === '/hello') {
+    if (method === 'GET' && pathname === '/hello') {
       return handleHello(user, req, res, secrets.pushKeys.publicKey, whoamiHost);
     }
 
     // login required
-    if (req.method === 'POST' && req.url === '/logout') {
+    if (method === 'POST' && pathname === '/logout') {
       if (!user) return unauthorized(res);
       return handleLogout(db, user, req, res, secrets.appSecret, updateSubs);
     }
-    if (req.method === 'POST' && req.url === '/super-top-secret-access') {
+    if (method === 'POST' && pathname === '/super-top-secret-access') {
       if (!user) return unauthorized(res);
-      return handleTopSecret(db, req, res, secrets.appSecret);
+      return handleTopSecret(db, user, req, res);
     }
 
     // non-public access required
-    if (req.method === 'POST' && req.url === '/subscribe') {
+    if (method === 'POST' && pathname === '/subscribe') {
       if (!user || user.role === 'public') return forbidden(res);
       return handleSubscribe(db, user, req, res, updateSubs);
     }
 
-    // admin required
+    // admin required (just 404 for non-admin)
+    if (user?.role === 'admin') {
+      if (method === 'GET' && pathname === '/top-secrets') {
+        return handleListSecrets(db, res);
+      }
+      if (method === 'POST' && pathname === '/top-secret') {
+        return handleAddSecret(db, req, res);
+      }
+      if (method === 'POST' && pathname === '/expire-top-secret') {
+        return handleExpireSecret(db, req, res);
+      }
+      if (method === 'GET' && pathname === '/top-secret-accounts') {
+        return handleTopSecretAccounts(db, req, res, searchParams);
+      }
+    }
 
     // sigh
     return notFound(res);

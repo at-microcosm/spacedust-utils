@@ -15,6 +15,11 @@ export class DB {
   #stmt_delete_push_sub;
   #stmt_get_push_info;
   #stmt_set_role;
+  #stmt_admin_add_secret;
+  #stmt_admin_expire_secret;
+  #stmt_admin_get_secrets;
+  #stmt_admin_secret_accounts;
+
   #transactionally;
   #db;
 
@@ -91,9 +96,36 @@ export class DB {
 
     this.#stmt_set_role = db.prepare(
       `update accounts
-          set role = ?,
-              secret_password = ?
-        where did = ?`);
+          set role = :role,
+              secret_password = :secret_password
+        where did = :did
+          and :secret_password in (select password
+                                     from top_secret_passwords)`);
+
+    this.#stmt_admin_add_secret = db.prepare(
+      `insert into top_secret_passwords (password)
+       values (?)`);
+
+    this.#stmt_admin_expire_secret = db.prepare(
+      `update top_secret_passwords
+          set expired = CURRENT_TIMESTAMP
+        where expired is null
+          and password = ?`);
+
+    this.#stmt_admin_get_secrets = db.prepare(
+      `select password,
+              unixepoch(added) * 1000 as 'added',
+              unixepoch(expired) * 1000 as 'expired'
+         from top_secret_passwords
+        order by expired, added desc`);
+
+    this.#stmt_admin_secret_accounts = db.prepare(
+      `select did,
+              unixepoch(first_seen) * 1000 as 'first_seen',
+              role
+         from accounts
+        where secret_password = ?
+        order by first_seen desc`);
 
     this.#transactionally = t => db.transaction(t).immediate();
   }
@@ -135,10 +167,25 @@ export class DB {
     this.#stmt_delete_push_sub.run(session);
   }
 
-  setRole(did, role, secret_password) {
-    let res = this.#stmt_set_role.run(role, secret_password, did);
-    if (res.changes === 0) {
-      console.warn('set role: no changes');
-    }
+  setRole(params) {
+    let res = this.#stmt_set_role.run(params);
+    return res.changes > 0;
+  }
+
+  addTopSecret(secretPassword) {
+    this.#stmt_admin_add_secret.run(secretPassword);
+  }
+
+  expireTopSecret(secretPassword) {
+    let res = this.#stmt_admin_expire_secret.run(secretPassword);
+    return res.changes > 0;
+  }
+
+  getSecrets() {
+    return this.#stmt_admin_get_secrets.all();
+  }
+
+  getSecretAccounts(secretPassword) {
+    return this.#stmt_admin_secret_accounts.all(secretPassword);
   }
 }

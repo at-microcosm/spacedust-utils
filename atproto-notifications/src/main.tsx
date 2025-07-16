@@ -7,7 +7,7 @@ import { Feed } from './pages/Feed';
 import { Admin } from './pages/Admin';
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+  // <StrictMode>
     <BrowserRouter>
       <App>
         <Routes>
@@ -16,7 +16,7 @@ createRoot(document.getElementById('root')!).render(
         </Routes>
       </App>
     </BrowserRouter>
-  </StrictMode>,
+  // </StrictMode>,
 );
 
 import TimeAgo from 'javascript-time-ago'
