@@ -133,6 +133,18 @@ const handleSubscribe = async (db, user, req, res, updateSubs) => {
   return gotIt(res);
 };
 
+const handlePushTest = async (db, user, res, push) => {
+  const subscription = db.getSubBySession(user.session);
+  const payload = JSON.stringify({
+    subject: user.did,
+    source: 'blue.microcosm.test.notification:hello',
+    source_record: `at://${user.did}/blue.microcosm.test.notification/test`,
+    timestamp: +new Date(),
+  });
+  await push(db, subscription, payload);
+  return okBye(res);
+};
+
 const handleLogout = async (db, user, req, res, appSecret, updateSubs) => {
   try {
     db.deleteSub(user.session);
@@ -152,9 +164,7 @@ const handleTopSecret = async (db, user, req, res) => {
   const { secret_password } = JSON.parse(body);
   const { did } = user;
   const role = 'early';
-  console.log('going with', {did, role, secret_password});
   const updated = db.setRole({ did, role, secret_password });
-  console.log('updated?', updated);
   if (updated) {
     return okBye(res);
   } else {
@@ -226,7 +236,7 @@ const withCors = (allowedOrigin, listener) => {
   }
 }
 
-export const server = (secrets, jwks, allowedOrigin, whoamiHost, db, updateSubs, adminDid) => {
+export const server = (secrets, jwks, allowedOrigin, whoamiHost, db, updateSubs, push, adminDid) => {
   const handler = (req, res) => {
     // don't love this but whatever
     const { pathname, searchParams } = new URL(`http://localhost${req.url}`);
@@ -260,6 +270,10 @@ export const server = (secrets, jwks, allowedOrigin, whoamiHost, db, updateSubs,
     if (method === 'POST' && pathname === '/subscribe') {
       if (!user || user.role === 'public') return forbidden(res);
       return handleSubscribe(db, user, req, res, updateSubs);
+    }
+    if (method === 'POST' && pathname === '/push-test') {
+      if (!user || user.role === 'public') return forbidden(res);
+      return handlePushTest(db, user, res, push);
     }
 
     // admin required (just 404 for non-admin)

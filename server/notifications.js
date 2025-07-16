@@ -146,5 +146,5 @@ export const connectSpacedust = (db, host) => {
     restart();
   };
 
-  return updateSubs;
+  return { updateSubs, push };
 };

@@ -11,6 +11,7 @@ export class DB {
   #stmt_insert_push_sub;
   #stmt_get_all_sub_dids;
   #stmt_get_push_subs;
+  #stmt_get_push_sub;
   #stmt_update_push_sub;
   #stmt_delete_push_sub;
   #stmt_get_push_info;
@@ -76,6 +77,14 @@ export class DB {
                 as 'since_last_push'
          from push_subs
         where account_did = ?`);
+
+    this.#stmt_get_push_sub = db.prepare(
+      `select session,
+              subscription,
+              (julianday(CURRENT_TIMESTAMP) - julianday(last_push)) * 24 * 60 * 60
+                as 'since_last_push'
+         from push_subs
+        where session = ?`);
 
     this.#stmt_update_push_sub = db.prepare(
       `update push_subs
@@ -157,6 +166,10 @@ export class DB {
 
   getSubsByDid(did) {
     return this.#stmt_get_push_subs.all(did);
+  }
+
+  getSubBySession(session) {
+    return this.#stmt_get_push_sub.get(session);
   }
 
   updateLastPush(session) {

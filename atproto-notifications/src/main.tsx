@@ -5,6 +5,7 @@ import './index.css';
 import { App } from './App';
 import { Feed } from './pages/Feed';
 import { Admin } from './pages/Admin';
+import { Early } from './pages/Early';
 
 createRoot(document.getElementById('root')!).render(
   // <StrictMode>
@@ -13,6 +14,7 @@ createRoot(document.getElementById('root')!).render(
         <Routes>
           <Route index element={<Feed />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/early" element={<Early />} />
         </Routes>
       </App>
     </BrowserRouter>

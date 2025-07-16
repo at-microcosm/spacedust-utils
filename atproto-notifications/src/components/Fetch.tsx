@@ -67,7 +67,7 @@ export function GetJson({ endpoint, params, credentials, ...forFetch }) {
   );
 }
 
-async function postJson(url, body, credentials) {
+export async function postJson(url, body, credentials) {
   const opts = {
     method: 'POST',
     headers: {'Content-Type': 'applicaiton/json'},

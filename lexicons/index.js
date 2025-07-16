@@ -1,4 +1,13 @@
 export default {
+  'blue.microcosm': {
+    name: 'microcosm',
+    clients: [
+      {},
+    ],
+    known_sources: {
+      'test.notification:hello': 'Hello spacedust!',
+    },
+  },
   'app.bsky': {
     name: 'Bluesky',
     clients: [

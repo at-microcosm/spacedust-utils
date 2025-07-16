@@ -1,6 +1,8 @@
-button {
+button,
+a.button {
   border-radius: 0.5rem;
   border: 1px solid transparent;
+  color: inherit;
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
@@ -12,11 +14,14 @@ button {
   border-right-color: hsla(0, 0%, 0%, 0.3);
   box-shadow: 0 42px 42px -42px inset #221828;
 }
-button:hover {
+button:hover,
+a.button:hover {
   border-color: #646cff;
 }
 button:focus,
-button:focus-visible {
+button:focus-visible,
+a.button:focus,
+a.button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 

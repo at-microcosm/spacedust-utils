@@ -15,7 +15,7 @@ export function WithNotificationPermission({ children }) {
   if (currentPermission !== 'granted') {
     return (
       <>
-        <h3>Step 2: Allow notifications</h3>
+        <h3>Final step: Allow notifications</h3>
         <p>To show notifications we need permission:</p>
         <p>
           <button

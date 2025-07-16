@@ -38,11 +38,12 @@ export function SecretPassword({ did, role }) {
           }}
           ok={() => (
             <>
-              <p>That will do.</p>
+              <p style={{ color: "#9f0" }}>Secret password accepted.</p>
               <p>
-                <button onClick={() => window.location.reload()}>
-                  Enter
-                </button>
+                {/* an <a> tag, not a <Link>, on purpose so we relaod for our role */}
+                <a className="button" href="/early">
+                  Continue
+                </a>
               </p>
             </>
           )}
@@ -62,7 +63,7 @@ export function SecretPassword({ did, role }) {
           {' '}
           {begun && (
             <button type="submit" className="subtle">
-              open sesame
+              unlock
             </button>
           )}
         </p>
