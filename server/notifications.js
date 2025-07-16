@@ -113,8 +113,11 @@ const handleDust = db => async event => {
 
   const subs = db.getSubsByDid(did);
   const payload = JSON.stringify({ subject, source, source_record, timestamp });
-  let res = await Promise.all(subs.map(pushSubscription => push(db, pushSubscription, payload)));
-  console.log('send results', res);
+  try {
+    await Promise.all(subs.map(pushSubscription => push(db, pushSubscription, payload)));
+  } catch (e) {
+    console.warn('at least one notification send failed', e);
+  }
 };
 
 export const connectSpacedust = (db, host) => {
