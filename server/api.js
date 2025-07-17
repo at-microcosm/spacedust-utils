@@ -158,7 +158,6 @@ const handleLogout = async (db, user, req, res, appSecret, updateSubs) => {
 };
 
 const handleTopSecret = async (db, user, req, res) => {
-  console.log('ts');
   // TODO: succeed early if they're already in?
   const body = await getRequesBody(req);
   const { secret_password } = JSON.parse(body);
@@ -171,6 +170,20 @@ const handleTopSecret = async (db, user, req, res) => {
     return forbidden(res);
   }
 };
+
+const handleGetGlobalNotifySettings = async (db, user, res) => {
+  const settings = db.getNotifyAccountGlobals(user.did);
+  return ok(res, settings);
+};
+
+const handleSetGlobalNotifySettings = async (db, user, req, res) => {
+  const body = await getRequesBody(req);
+  const { notify_enabled, notify_self } = JSON.parse(body);
+  db.setNotifyAccountGlobals(user.did, { notify_enabled, notify_self });
+  return gotIt(res);
+};
+
+/// admin stuff
 
 const handleListSecrets = async (db, res) => {
   const secrets = db.getSecrets();
@@ -265,6 +278,14 @@ export const server = (secrets, jwks, allowedOrigin, whoamiHost, db, updateSubs,
     if (method === 'POST' && pathname === '/super-top-secret-access') {
       if (!user) return unauthorized(res);
       return handleTopSecret(db, user, req, res);
+    }
+    if (method === 'GET' && pathname === '/global-notify') {
+      if (!user) return unauthorized(res);
+      return handleGetGlobalNotifySettings(db, user, res);
+    }
+    if (method === 'POST' && pathname === '/global-notify') {
+      if (!user) return unauthorized(res);
+      return handleSetGlobalNotifySettings(db, user, req, res);
     }
 
     // non-public access required

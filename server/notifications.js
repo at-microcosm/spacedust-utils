@@ -84,6 +84,27 @@ const isTorment = source => {
   }
 };
 
+const extractUriDid = at_uri => {
+  if (!at_uri.startsWith('at://')) {
+    console.warn(`ignoring non-at-uri: ${at_uri}`);
+    return null;
+  }
+  const [id, ..._] = at_uri.slice('at://'.length).split('/');
+  if (!id) {
+    console.warn(`ignoring at-uri with missing id segment: ${at_uri}`);
+    return null;
+  }
+  if (id.startsWith('@')) {
+    console.warn(`ignoring @handle at-uri: ${at_uri}`);
+    return null;
+  }
+  if (!id.startsWith('did:')) {
+    console.warn(`ignoring non-did at-uri: ${at_uri}`);
+    return null;
+  }
+  return id;
+};
+
 const handleDust = db => async event => {
   console.log('got', event.data);
   let data;
@@ -100,15 +121,26 @@ const handleDust = db => async event => {
   }
   const timestamp = +new Date();
 
-  let did;
-  if (subject.startsWith('did:')) did = subject;
-  else if (subject.startsWith('at://')) {
-    const [id, ..._] = subject.slice('at://'.length).split('/');
-    if (id.startsWith('did:')) did = id;
-  }
+  const did = subject.startsWith('did:') ? subject : extractUriDid(subject);
   if (!did) {
     console.warn(`ignoring link with non-DID subject: ${subject}`)
     return;
+  }
+
+  // this works for now since only the account owner is assumed to be a notification target
+  // but for "replies on post" etc that won't hold
+  const { notify_enabled, notify_self } = db.getNotifyAccountGlobals(did);
+  if (!notify_enabled) console.warn('would drop this since notifies are not enabled (ui todo)');
+  if (!notify_self) {
+    const source_did = extractUriDid(source_record);
+    if (!source_did) {
+      console.warn(`ignoring link with non-DID source_record: ${source_record}`)
+      return;
+    }
+    if (source_did === did) {
+      console.warn(`ignoring self-notification`);
+      return;
+    }
   }
 
   const subs = db.getSubsByDid(did);

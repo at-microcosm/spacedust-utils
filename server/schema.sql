@@ -3,6 +3,8 @@ create table if not exists accounts (
   first_seen      text not null default CURRENT_TIMESTAMP,
   role            text null,
   secret_password text null,
+  notify_enabled  integer not null default false,
+  notify_self     integer not null default false,
 
   check(did like 'did:%')
 ) strict;
