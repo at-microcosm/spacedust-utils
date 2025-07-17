@@ -136,7 +136,7 @@ export class DB {
               sum(p.total_pushes) as 'total_pushes',
               unixepoch(max(p.last_push)) * 1000 as 'last_push'
          from accounts
-         join push_subs p on (p.account_did = did)
+         left outer join push_subs p on (p.account_did = did)
         where secret_password = ?
         group by did
         order by first_seen desc`);
