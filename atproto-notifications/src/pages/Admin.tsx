@@ -84,6 +84,7 @@ export function Admin({}) {
         credentials
         ok={secrets => secrets.map(s => <Secret key={s.password} {...s} />)}
       />
+      <Secret password={null} added={0} expired={null} />
     </>
   );
 }
@@ -94,7 +95,7 @@ function Secret({ password, added, expired }) {
   return (
     <div className="admin-secret">
       <p className="admin-secret-secret">
-        "{password}"
+        {password !== null ? <>"{password}"</> : '[no password]'}
         {' '}
         (added <ReactTimeAgo date={new Date(added)} locale="en-US" />
           {expired && (
@@ -123,7 +124,7 @@ function Secret({ password, added, expired }) {
       </p>
       <GetJson
         endpoint="/top-secret-accounts"
-        params={{ secret_password: password }}
+        params={{ secret_password: password ?? '' }}
         credentials
         ok={accounts => accounts.length > 0 ? (
           <ul>

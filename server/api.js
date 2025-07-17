@@ -202,7 +202,8 @@ const handleExpireSecret = async (db, req, res) => {
 };
 
 const handleTopSecretAccounts = async (db, req, res, searchParams) => {
-  const accounts = db.getSecretAccounts(searchParams.get('secret_password'));
+  const secret = searchParams.get('secret_password');
+  const accounts = secret ? db.getSecretAccounts(secret) : db.getNonSecretAccounts();
   return ok(res, accounts);
 };
 
