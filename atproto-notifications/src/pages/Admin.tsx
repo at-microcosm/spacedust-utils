@@ -127,9 +127,9 @@ function Secret({ password, added, expired }) {
         credentials
         ok={accounts => accounts.length > 0 ? (
           <ul>
-            {accounts.map(({ did, first_seen, role }) => (
-              <li key={did}>
-                <Account did={did} firstSeen={first_seen} role={role} />
+            {accounts.map(info => (
+              <li key={info.did}>
+                <Account {...info} />
               </li>
             ))}
           </ul>
@@ -141,14 +141,16 @@ function Secret({ password, added, expired }) {
   );
 }
 
-function Account({ did, firstSeen, role }) {
+function Account({ did, first_seen, role, active_subs, total_pushes, last_push }) {
   return (
     <p>
       <Handle did={did} />
+      {' '}
+      ({active_subs} subs, {total_pushes} pushes, latest <ReactTimeAgo date={new Date(last_push)} locale="en-US" />)
+      <br/>
+      joined <ReactTimeAgo date={new Date(first_seen)} locale="en-US" />
       {', '}
-      "{role}"
-      {', '}
-      <ReactTimeAgo date={new Date(firstSeen)} locale="en-US" />
+      role: <code>{role}</code>
     </p>
   );
 }
