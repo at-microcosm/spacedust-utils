@@ -35,9 +35,9 @@ export function Early({ }) {
         <li>Many features can easily be added! Some others can't! Make a request and let's see :)</li>
         <li>It's not a long-term committed part of microcosm <em>(yet)</em></li>
       </ol>
-      <p>Sadly, it doesn't really work on mobile. On iOS you can hit "share" and "add to home screen" to get things eventually mostly set up, but push delivery will stop after a few minutes. Android people might have better luck?</p>
+      <p>Sadly, it doesn't really work on mobile. iOS will stop delivering notifications after some minutes. Android people might have better luck?</p>
+      <p>With that out of the way, let's cover some basics!</p>
       <h3>Hello hello</h3>
-      <p>With that out of the way, let's cover some basics.</p>
       <p>
         To see a test notification, <button onClick={localTest}>click on this</button>. This is a local-only test.
       </p>
