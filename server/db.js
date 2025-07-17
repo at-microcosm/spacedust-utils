@@ -131,9 +131,14 @@ export class DB {
     this.#stmt_admin_secret_accounts = db.prepare(
       `select did,
               unixepoch(first_seen) * 1000 as 'first_seen',
-              role
+              role,
+              count(*) as 'active_subs',
+              sum(p.total_pushes) as 'total_pushes',
+              unixepoch(max(p.last_push)) * 1000 as 'last_push'
          from accounts
+         join push_subs p on (p.account_did = did)
         where secret_password = ?
+        group by did
         order by first_seen desc`);
 
     this.#transactionally = t => db.transaction(t).immediate();
