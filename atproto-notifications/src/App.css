@@ -41,6 +41,10 @@
   padding: 0.5rem 1rem;
 }
 
+h3 {
+  margin-top: 2rem;
+}
+
 .detail {
   font-style: italic;
   font-size: 0.8rem;
