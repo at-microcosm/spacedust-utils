@@ -20,6 +20,7 @@ export class DB {
   #stmt_admin_expire_secret;
   #stmt_admin_get_secrets;
   #stmt_admin_secret_accounts;
+  #stmt_admin_nonsecret_accounts;
 
   #transactionally;
   #db;
@@ -136,8 +137,22 @@ export class DB {
               sum(p.total_pushes) as 'total_pushes',
               unixepoch(max(p.last_push)) * 1000 as 'last_push'
          from accounts
-         join push_subs p on (p.account_did = did)
-        where secret_password = ?
+         left outer join push_subs p on (p.account_did = did)
+        where secret_password = :password
+        group by did
+        order by first_seen desc`);
+
+    this.#stmt_admin_nonsecret_accounts = db.prepare(
+      `select did,
+              unixepoch(first_seen) * 1000 as 'first_seen',
+              role,
+              count(*) as 'active_subs',
+              sum(p.total_pushes) as 'total_pushes',
+              unixepoch(max(p.last_push)) * 1000 as 'last_push'
+         from accounts
+         left outer join push_subs p on (p.account_did = did)
+         left outer join top_secret_passwords s on (s.password = secret_password)
+        where s.password is null
         group by did
         order by first_seen desc`);
 
@@ -204,6 +219,10 @@ export class DB {
   }
 
   getSecretAccounts(secretPassword) {
-    return this.#stmt_admin_secret_accounts.all(secretPassword);
+    return this.#stmt_admin_secret_accounts.all({ password: secretPassword });
+  }
+
+  getNonSecretAccounts() {
+    return this.#stmt_admin_nonsecret_accounts.all();
   }
 }
