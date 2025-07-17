@@ -16,6 +16,9 @@ export class DB {
   #stmt_delete_push_sub;
   #stmt_get_push_info;
   #stmt_set_role;
+  #stmt_get_notify_account_globals;
+  #stmt_set_notify_account_globals;
+
   #stmt_admin_add_secret;
   #stmt_admin_expire_secret;
   #stmt_admin_get_secrets;
@@ -112,6 +115,19 @@ export class DB {
           and :secret_password in (select password
                                      from top_secret_passwords)`);
 
+    this.#stmt_get_notify_account_globals = db.prepare(
+      `select notify_enabled,
+              notify_self
+         from accounts
+        where did = :did`);
+
+    this.#stmt_set_notify_account_globals = db.prepare(
+      `update accounts
+          set notify_enabled = :notify_enabled,
+              notify_self = :notify_self
+        where did = :did`);
+
+
     this.#stmt_admin_add_secret = db.prepare(
       `insert into top_secret_passwords (password)
        values (?)`);
@@ -204,6 +220,21 @@ export class DB {
     let res = this.#stmt_set_role.run(params);
     return res.changes > 0;
   }
+
+  getNotifyAccountGlobals(did) {
+    return this.#stmt_get_notify_account_globals.get({ did });
+  }
+
+  setNotifyAccountGlobals(did, globals) {
+    this.#transactionally(() => {
+      const update = this.getNotifyAccountGlobals(did);
+      if (globals.notify_enabled !== undefined) update.notify_enabled = +globals.notify_enabled;
+      if (globals.notify_self !== undefined) update.notify_self = +globals.notify_self;
+      update.did = did;
+      this.#stmt_set_notify_account_globals.run(update);
+    });
+  }
+
 
   addTopSecret(secretPassword) {
     this.#stmt_admin_add_secret.run(secretPassword);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getNotifications, getSecondary } from '../db';
 import { ButtonGroup } from '../components/Buttons';
+import { NotificationSettings } from '../components/NotificationSettings';
 import { Notification } from '../components/Notification';
 import psl from 'psl';
 import lexicons from 'lexicons';
@@ -130,7 +131,6 @@ export function Feed() {
       </div>
       {secondary !== 'all' && (
         <div className="feed-filter-secondary">
-          <h4>Filter:</h4>
           <SecondaryFilter
             inc={inc}
             secondary={secondary}
@@ -139,6 +139,12 @@ export function Feed() {
           />
         </div>
       )}
+
+      <NotificationSettings
+        secondary={secondary}
+        secondaryFilter={secondaryFilter}
+      />
+
       <div className="feed-notifications">
         {feed.map(([k, n]) => (
           <Notification key={k} {...n} />

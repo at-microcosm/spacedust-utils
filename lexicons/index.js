@@ -10,6 +10,10 @@ export default {
   },
   'app.bsky': {
     name: 'Bluesky',
+    profile: {
+      display_name: 'app.bsky.actor.profile:displayName',
+      avatar: 'app.bsky.actor.profile:avatar',
+    },
     clients: [
       {
         app_name: 'Bluesky Social',
@@ -39,8 +43,8 @@ export default {
     ],
     known_sources: {
       'graph.follow:subject': 'Follow',
-      'graph.verification:subject': 'Verification ✅',
-      'feed.like:subject.uri': 'Like 💜',
+      'graph.verification:subject': 'Verification',
+      'feed.like:subject.uri': 'Like',
       'feed.like:via.uri': 'Repost like',
       'feed.post:reply.parent.uri': 'Reply',
       'feed.post:reply.root.uri': 'Reply in thread',
@@ -62,7 +66,7 @@ export default {
     name: 'Leaflet',
     clients: [
       {
-        'app_name': 'leaflet.pub',
+        app_name: 'leaflet.pub',
         canonical: true,
         icon: '/icons/pub.leaflet.jpg',
         main: 'https://leaflet.pub/home',
@@ -79,7 +83,7 @@ export default {
     name: 'Tangled',
     clients: [
       {
-        'app_name': 'Tangled',
+        app_name: 'Tangled',
         canonical: true,
         icon: '/icons/sh.tangled.jpg',
         main: 'https://tangled.sh',
@@ -105,7 +109,7 @@ export default {
     name: 'Pinksea',
     clients: [
       {
-        'app_name': 'Pinksea',
+        app_name: 'Pinksea',
         canonical: true,
         icon: '/icons/com.shinolabs.jpg',
         main: 'https://pinksea.art',
