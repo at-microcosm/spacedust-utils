@@ -69,8 +69,6 @@ const isTorment = source => {
     parts.reverse();
     parts = parts.join('.');
 
-    // const unreversed = parts.toReversed().join('.');
-
     const app = psl.parse(parts)?.domain ?? 'unknown';
 
     let appPrefix = app.split('.');
@@ -130,7 +128,10 @@ const handleDust = db => async event => {
   // this works for now since only the account owner is assumed to be a notification target
   // but for "replies on post" etc that won't hold
   const { notify_enabled, notify_self } = db.getNotifyAccountGlobals(did);
-  if (!notify_enabled) console.warn('would drop this since notifies are not enabled (ui todo)');
+  if (!notify_enabled) {
+    console.warn('dropping notification for global not-enabled setting');
+    return;
+  }
   if (!notify_self) {
     const source_did = extractUriDid(source_record);
     if (!source_did) {
