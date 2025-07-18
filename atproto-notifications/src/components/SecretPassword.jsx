@@ -41,7 +41,7 @@ export function SecretPassword({ did, role }) {
               <p style={{ color: "#9f0" }}>Secret password accepted.</p>
               <p>
                 {/* an <a> tag, not a <Link>, on purpose so we relaod for our role */}
-                <a className="button" href="/early">
+                <a className="button" href="/early?hello">
                   Continue
                 </a>
               </p>

@@ -1,12 +1,15 @@
 import { useCallback, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { postJson } from '../components/Fetch';
 import './Early.css';
 
 export function Early({ }) {
+  const [searchParams, _] = useSearchParams();
   const [notified, setNotified] = useState(false);
   const [pushStatus, setPushStatus] = useState(null);
   const [pushed, setPushed] = useState(false);
+
+  const returning = !searchParams.has('hello');
 
   const localTest = useCallback(() => {
     try {
@@ -49,7 +52,7 @@ export function Early({ }) {
       <p>
         To see a test notification, <button onClick={localTest}>click on this</button>. This is a local-only test.
       </p>
-      {notified && (
+      {(returning || notified) && (
         <>
           <p>
             Then
@@ -66,7 +69,7 @@ export function Early({ }) {
           {pushStatus === 'failed' && <p>uh oh, something went wrong requesting a web push</p>}
       </>
     )}
-    {(pushed && pushStatus !== 'failed') && (
+    {(returning || (pushed && pushStatus !== 'failed')) && (
       <>
         <h3>Great!</h3>
         <p>
