@@ -31,11 +31,11 @@ create table if not exists top_secret_passwords (
   check(length(password) >= 3)
 ) strict;
 
-create table if not exists mute_by_secondary (
+create table if not exists notification_filters (
   account_did text not null,
   selector    text not null,
   selection   text not null,
-  mute        integer not null default true,
+  notify      integer null,
 
   primary key(account_did, selector, selection),
   check(selector in ('all', 'app', 'group', 'source')),

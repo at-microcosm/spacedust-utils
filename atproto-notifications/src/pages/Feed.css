@@ -27,6 +27,10 @@
   margin: 2rem auto;
 }
 
+.filter-pref-wrapper {
+  display: inline-block;
+}
+
 .filter-pref-trigger {
   display: inline-block;
   padding: 0 0.25rem;

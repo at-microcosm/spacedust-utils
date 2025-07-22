@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import Database from 'better-sqlite3';
 
 const SUBS_PER_ACCOUNT_LIMIT = 5;
+const SECONDARY_FILTERS_LIMIT = 100;
+
 const SCHEMA_FNAME = './schema.sql';
 
 export class DB {
@@ -18,6 +20,10 @@ export class DB {
   #stmt_set_role;
   #stmt_get_notify_account_globals;
   #stmt_set_notify_account_globals;
+  #stmt_set_notification_filter;
+  #stmt_get_notification_filter;
+  #stmt_count_notification_filters;
+  #stmt_rm_notification_filter;
 
   #stmt_admin_add_secret;
   #stmt_admin_expire_secret;
@@ -127,6 +133,30 @@ export class DB {
               notify_self = :notify_self
         where did = :did`);
 
+    this.#stmt_set_notification_filter = db.prepare(
+      `insert into notification_filters (account_did, selector, selection, notify)
+       values (:did, :selector, :selection, :notify)
+           on conflict do update
+          set notify = excluded.notify`);
+
+    this.#stmt_get_notification_filter = db.prepare(
+      `select notify
+         from notification_filters
+        where account_did = :did
+          and selector = :selector
+          and selection = :selection`);
+
+    this.#stmt_count_notification_filters = db.prepare(
+      `select count(*) as n
+         from notification_filters
+        where account_did = :did`);
+
+    this.#stmt_rm_notification_filter = db.prepare(
+      `delete from notification_filters
+        where account_did = :did
+          and selector = :selector
+          and selection = :selection`);
+
 
     this.#stmt_admin_add_secret = db.prepare(
       `insert into top_secret_passwords (password)
@@ -233,6 +263,31 @@ export class DB {
       update.did = did;
       this.#stmt_set_notify_account_globals.run(update);
     });
+  }
+
+  getNotificationFilter(did, selector, selection) {
+    const res = this.#stmt_get_notification_filter.get({ did, selector, selection });
+    const dbNotify = res?.notify;
+    if (dbNotify === 1) return true;
+    else if (dbNotify === 0) return false;
+    else return null;
+  }
+
+  setNotificationFilter(did, selector, selection, notify) {
+    if (notify === null) {
+      this.#stmt_rm_notification_filter.run({ did, selector, selection });
+    } else {
+      this.#transactionally(() => {
+        const { n } = this.#stmt_count_notification_filters.get({ did });
+        if (n >= SECONDARY_FILTERS_LIMIT) {
+          throw new Error('max filters set for account');
+        }
+        let dbNotify = null;
+        if (notify === true) dbNotify = 1;
+        else if (notify === false) dbNotify = 0;
+        this.#stmt_set_notification_filter.run({ did, selector, selection, notify: dbNotify });
+      });
+    }
   }
 
 

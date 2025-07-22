@@ -1,23 +1,49 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Popup from 'reactjs-popup';
 import { getNotifications, getSecondary } from '../db';
 import { ButtonGroup } from '../components/Buttons';
 import { NotificationSettings } from '../components/NotificationSettings';
 import { Notification } from '../components/Notification';
-import { GetJson } from '../components/Fetch';
+import { GetJson, PostJson } from '../components/Fetch';
 import psl from 'psl';
 import lexicons from 'lexicons';
 
 import './feed.css';
 
 function FilterPref({ secondary, value }) {
-  return (
+  const [wanted, setWanted] = useState(null);
+  const [updateCount, setUpdateCount] = useState(0);
+  const v = `${updateCount}:${wanted}`;
+
+  const setFilterBool = useCallback(val => {
+    setUpdateCount(n => n + 1);
+    setWanted(val === 'notify');
+  });
+  const resetFilter = useCallback(() => {
+    setUpdateCount(n => n + 1);
+    setWanted(null);
+  });
+
+  const trigger = useCallback(notify => {
+    let icon = '⚙', title = 'Default (inherit)';
+    if (notify === true) {
+      icon = '🔊';
+      title = 'Always notify';
+    } else if (notify === false) {
+      icon = '🚫';
+      title = 'Notifications muted';
+    }
+    return (
+      <div className="filter-pref-trigger" title={title}>
+        {icon}
+      </div>
+    );
+  });
+
+  const renderFilter = useCallback(({ notify }) => (
     <Popup
-      trigger={
-        <div className="filter-pref-trigger">
-          ⚙
-        </div>
-      }
+      key="x"
+      trigger={trigger(notify)}
       position={['bottom center']}
       closeOnDocumentClick
     >
@@ -28,12 +54,32 @@ function FilterPref({ secondary, value }) {
             { val: 'notify', label: 'notify' },
             { val: 'mute' },
           ]}
-          current={null}
+          current={notify === null ? null : notify ? 'notify' : 'mute'}
+          onChange={setFilterBool}
         />
-        {/*<button className="subtle">reset</button>*/}
+        {notify !== null && (
+          <button className="subtle" onClick={resetFilter}>reset</button>
+        )}
       </div>
     </Popup>
-  );
+  ));
+
+  const common = {
+    endpoint: '/notification-filter',
+    credentials: true,
+    ok: renderFilter,
+    loading: () => <>&hellip;</>,
+  };
+
+  return updateCount === 0
+    ? <GetJson key={v}
+        params={{ selector: secondary, selection: value }}
+        {...common}
+      />
+    : <PostJson key={v}
+        data={{ selector: secondary, selection: value, notify: wanted }}
+        {...common}
+      />;
 }
 
 function SecondaryFilter({ inc, secondary, current, onUpdate }) {
