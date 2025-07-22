@@ -2,7 +2,12 @@ export default {
   'blue.microcosm': {
     name: 'microcosm',
     clients: [
-      {},
+      {
+        app_name: 'Spacedust notifications demo',
+        canonical: true,
+        main: 'https://notifications.microcosm.blue',
+        icon: '/icons/microcosm.png',
+      },
     ],
     known_sources: {
       'test.notification:hello': 'Hello spacedust!',

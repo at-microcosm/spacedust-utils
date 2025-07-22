@@ -1,12 +1,40 @@
 import { useEffect, useState } from 'react';
+import Popup from 'reactjs-popup';
 import { getNotifications, getSecondary } from '../db';
 import { ButtonGroup } from '../components/Buttons';
 import { NotificationSettings } from '../components/NotificationSettings';
 import { Notification } from '../components/Notification';
+import { GetJson } from '../components/Fetch';
 import psl from 'psl';
 import lexicons from 'lexicons';
 
 import './feed.css';
+
+function FilterPref({ secondary, value }) {
+  return (
+    <Popup
+      trigger={
+        <div className="filter-pref-trigger">
+          ⚙
+        </div>
+      }
+      position={['bottom center']}
+      closeOnDocumentClick
+    >
+      <div className="filter-pref-popup">
+        <h4>filter notifications</h4>
+        <ButtonGroup
+          options={[
+            { val: 'notify', label: 'notify' },
+            { val: 'mute' },
+          ]}
+          current={null}
+        />
+        {/*<button className="subtle">reset</button>*/}
+      </div>
+    </Popup>
+  );
+}
 
 function SecondaryFilter({ inc, secondary, current, onUpdate }) {
   const [secondaries, setSecondaries] = useState([]);
@@ -80,7 +108,18 @@ function SecondaryFilter({ inc, secondary, current, onUpdate }) {
               {icon && (
                 <img className="app-icon" src={icon} title={appName ?? app} alt="" />
               )}
-              {title} ({total})
+              {title}
+              <small style={{
+                display: 'inline-block',
+                fontSize: '0.6rem',
+                padding: '0 0.2rem',
+                color: '#f90',
+                fontFamily: 'monospace',
+                verticalAlign: 'top',
+              }}>
+                {total >= 30 ? '30+' : total}
+              </small>
+              <FilterPref secondary={secondary} value={k} />
             </>
           ),
         };

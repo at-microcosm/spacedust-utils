@@ -39,15 +39,12 @@ export function Early({ }) {
 
   // TODO move up (to chrome?) so it syncs
   const setGlobalNotifications = useCallback(async enabled => {
-    // setSecretDevStatus('pending');
     const host = import.meta.env.VITE_NOTIFICATIONS_HOST;
     const url = new URL('/global-notify', host);
     try {
       await postJson(url, JSON.stringify({ notify_enabled: enabled }), true)
-      // setSecretDevStatus(null);
     } catch (err) {
       console.error('failed to set self-notify setting', err);
-      // setSecretDevStatus('failed');
     }
     setNotifyToggleCounter(n => n + 1);
   });
