@@ -1,4 +1,4 @@
-import lexicons from 'lexicons';
+import { default as lexicons, getBits } from 'lexicons';
 import psl from 'psl';
 import webpush from 'web-push';
 import WebSocket from 'ws';
@@ -140,6 +140,24 @@ const handleDust = db => async event => {
     }
     if (source_did === did) {
       console.warn(`ignoring self-notification`);
+      return;
+    }
+  }
+
+  // like above, this over-assumes that did is the only recipient we could care about for now
+  const { app, group } = getBits(source);
+  for (const [selector, selection] of [
+    ['source', source],
+    ['group', group],
+    ['app', app],
+  ]) {
+    const notify = db.getNotificationFilter(did, selector, selection);
+    if (notify === true) {
+      console.info(`explicitly allowing notification by filter for ${selector}=${selection}`);
+      break;
+    };
+    if (notify === false) {
+      console.warn(`ignoring filtered notification for ${selector}=${selection}`);
       return;
     }
   }
