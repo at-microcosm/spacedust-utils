@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { postJson } from '../components/Fetch';
+import { GetJson, postJson } from '../components/Fetch';
+import { ButtonGroup } from '../components/Buttons';
 import './Early.css';
 
 export function Early({ }) {
@@ -8,6 +9,7 @@ export function Early({ }) {
   const [notified, setNotified] = useState(false);
   const [pushStatus, setPushStatus] = useState(null);
   const [pushed, setPushed] = useState(false);
+  const [notifyToggleCounter, setNotifyToggleCounter] = useState(0);
 
   const returning = !searchParams.has('hello');
 
@@ -35,6 +37,21 @@ export function Early({ }) {
     setPushed(true);
   });
 
+  // TODO move up (to chrome?) so it syncs
+  const setGlobalNotifications = useCallback(async enabled => {
+    // setSecretDevStatus('pending');
+    const host = import.meta.env.VITE_NOTIFICATIONS_HOST;
+    const url = new URL('/global-notify', host);
+    try {
+      await postJson(url, JSON.stringify({ notify_enabled: enabled }), true)
+      // setSecretDevStatus(null);
+    } catch (err) {
+      console.error('failed to set self-notify setting', err);
+      // setSecretDevStatus('failed');
+    }
+    setNotifyToggleCounter(n => n + 1);
+  });
+
   return (
     <div className="early">
       <h2>Hello!</h2>
@@ -42,7 +59,6 @@ export function Early({ }) {
       <p>A few things to keep in mind:</p>
       <ol>
         <li>This is a <a href="https://spacedust.microcosm.blue" target="_blank">spacedust</a> demo, not a polished product</li>
-        <li>It's not a long-term committed part of microcosm <em>(yet)</em></li>
         <li>Mobile browsers are unreliable at delivering Web Push notifications</li>
         <li>Many features are easy to add! Some are surprisingly hard! Make a request and let's see :)</li>
       </ol>
@@ -72,6 +88,24 @@ export function Early({ }) {
     {(returning || (pushed && pushStatus !== 'failed')) && (
       <>
         <h3>Great!</h3>
+        <p>You're all set up to enable notifications:</p>
+
+        <GetJson
+          key={notifyToggleCounter}
+          endpoint="/global-notify"
+          credentials
+          ok={({ notify_enabled }) => (
+            <ButtonGroup
+              options={[
+                {val: 'paused', label: <>⏸&nbsp;&nbsp;pause{!notify_enabled && 'd'}</>},
+                {val: 'active', label: <>▶&nbsp;&nbsp;{notify_enabled ? 'notifications active' : 'enable notifications'}</>},
+              ]}
+              current={notify_enabled ? 'active' : 'paused'}
+              onChange={val => setGlobalNotifications(val === 'active')}
+            />
+          )}
+        />
+
         <p>
           You can get back to this page by clicking the early
           <span className="chrome-role-tag">early</span>
