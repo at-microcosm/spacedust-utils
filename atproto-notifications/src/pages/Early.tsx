@@ -59,7 +59,6 @@ export function Early({ }) {
       <p>A few things to keep in mind:</p>
       <ol>
         <li>This is a <a href="https://spacedust.microcosm.blue" target="_blank">spacedust</a> demo, not a polished product</li>
-        <li>It's not a long-term committed part of microcosm <em>(yet)</em></li>
         <li>Mobile browsers are unreliable at delivering Web Push notifications</li>
         <li>Many features are easy to add! Some are surprisingly hard! Make a request and let's see :)</li>
       </ol>

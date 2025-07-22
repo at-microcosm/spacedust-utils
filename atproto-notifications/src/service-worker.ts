@@ -72,9 +72,13 @@ function handleNotificationClick(ev) {
       includeUncontrolled: true,
     });
 
-    // focus the first available existing window/tab
-    for (const client of clientList)
-      return await client.focus();
+    // focus the first available existing window/tab open at /
+    for (const client of clientList) {
+      const pathname = new URL(client.url).pathname;
+      if (pathname === '/') {
+        return await client.focus();
+      }
+    }
 
     // otherwise open a new tab
     await clients.openWindow('/');
