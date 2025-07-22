@@ -26,3 +26,47 @@
   text-align: left;
   margin: 2rem auto;
 }
+
+.filter-pref-wrapper {
+  display: inline-block;
+}
+
+.filter-pref-trigger {
+  display: inline-block;
+  padding: 0 0.25rem;
+}
+.filter-pref-trigger:hover {
+  background: hsla(0, 0%, 50%, 0.333);
+  border-radius: 0.3333rem;
+}
+
+.popup-arrow {
+  color: #2c343c;
+  stroke-width: 1.5px;
+  stroke: hsla(0, 0%, 50%, 0.333);
+  stroke-dasharray: 30px;
+  stroke-dashoffset: -54px;
+}
+
+.popup-overlay {
+  background: hsla(0, 0%, 0%, 0.1);
+}
+
+.popup-content {
+  background: #2c343c;
+  padding: 0.25rem 0.333rem;
+  font-size: 0.8rem;
+  border: 0.5px solid hsla(0, 0%, 50%, 0.333);
+  border-radius: 0.25rem;
+}
+.filter-pref-popup {
+  text-align: center;
+}
+.filter-pref-popup h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.8rem;
+  color: #bbb;
+}
+.filter-pref.option {
+  display: block;
+}

@@ -183,6 +183,27 @@ const handleSetGlobalNotifySettings = async (db, user, req, res) => {
   return gotIt(res);
 };
 
+const handleGetNotificationFilter = async (db, user, searchParams, res) => {
+  const selector = searchParams.get('selector');
+  if (!selector) return badRequest(res, '"selector" required in search query');
+
+  const selection = searchParams.get('selection');
+  if (!selection) return badRequest(res, '"selection" required in search query');
+
+  const { did } = user;
+
+  const notify = db.getNotificationFilter(did, selector, selection) ?? null;
+  return ok(res, { notify });
+};
+
+const handleSetNotificationFilter = async (db, user, req, res) => {
+  const body = await getRequesBody(req);
+  const { selector, selection, notify } = JSON.parse(body);
+  const { did } = user;
+  db.setNotificationFilter(did, selector, selection, notify);
+  return ok(res, { notify });
+};
+
 /// admin stuff
 
 const handleListSecrets = async (db, res) => {
@@ -286,6 +307,14 @@ export const server = (secrets, jwks, allowedOrigin, whoamiHost, db, updateSubs,
     if (method === 'POST' && pathname === '/global-notify') {
       if (!user) return unauthorized(res);
       return handleSetGlobalNotifySettings(db, user, req, res);
+    }
+    if (method === 'GET' && pathname === '/notification-filter') {
+      if (!user) return unauthorized(res);
+      return handleGetNotificationFilter(db, user, searchParams, res);
+    }
+    if (method === 'POST' && pathname === '/notification-filter') {
+      if (!user) return unauthorized(res);
+      return handleSetNotificationFilter(db, user, req, res);
     }
 
     // non-public access required

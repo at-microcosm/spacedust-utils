@@ -30,3 +30,16 @@ create table if not exists top_secret_passwords (
 
   check(length(password) >= 3)
 ) strict;
+
+create table if not exists notification_filters (
+  account_did text not null,
+  selector    text not null,
+  selection   text not null,
+  notify      integer null,
+
+  primary key(account_did, selector, selection),
+  check(selector in ('all', 'app', 'group', 'source')),
+
+  foreign key(account_did) references accounts(did)
+    on delete cascade on update cascade
+) strict;
