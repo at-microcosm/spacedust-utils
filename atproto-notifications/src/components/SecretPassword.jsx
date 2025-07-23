@@ -2,8 +2,6 @@ import { useCallback, useState } from 'react';
 import { PostJson } from './Fetch';
 
 export function SecretPassword({ did, role }) {
-  const [begun, setBegun] = useState(false);
-  const [pw, setPw] = useState('');
   const [submission, setSubmission] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
@@ -15,14 +13,14 @@ export function SecretPassword({ did, role }) {
 
   return (
     <form method="post" onSubmit={handleSubmit}>
-      <h2>Secret password required</h2>
-      <p>This demo is not ready for public yet, but you can get early access as a <a href="https://github.com/sponsors/uniphil/" target="_blank">github sponsor</a> or <a href="https://ko-fi.com/bad_example" target="_blank">ko-fi supporter</a>.</p>
+      <h2>Secret early access</h2>
+      <p>This demo is still in development! Your support helps keep it going: <a href="https://github.com/sponsors/uniphil/" target="_blank">github sponsors</a>, <a href="https://ko-fi.com/bad_example" target="_blank">ko-fi</a>.</p>
 
       {submitting ? (
         <PostJson
           key={submission}
           endpoint="/super-top-secret-access"
-          data={{ secret_password: pw }}
+          data={{ secret_password: "letmein" }}
           credentials
           loading={() => (<>Checking&hellip;</>)}
           error={e => {
@@ -50,22 +48,7 @@ export function SecretPassword({ did, role }) {
         />
       ) : (
         <p>
-          <label>
-            Password:
-            {' '}
-            <input
-              type="text"
-              value={pw}
-              onFocus={() => setBegun(true)}
-              onChange={e => setPw(e.target.value)}
-            />
-          </label>
-          {' '}
-          {begun && (
-            <button type="submit" className="subtle">
-              unlock
-            </button>
-          )}
+          <button type="submit">Let me in</button>
         </p>
       )}
     </form>
