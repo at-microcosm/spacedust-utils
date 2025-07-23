@@ -22,6 +22,14 @@ a.notification:hover {
   border-bottom-color: hsla(0, 0%, 0%, 0.3);
 }
 
+.notification.error {
+  background: hsla(347, 72%, 20%, 0.333);
+  align-items: center;
+}
+.notification.error p {
+  margin: 0;
+}
+
 .handle {
   color: skyblue;
 }
