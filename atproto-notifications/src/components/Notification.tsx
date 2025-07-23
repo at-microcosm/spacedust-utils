@@ -42,7 +42,7 @@ export function Notification({ app, group, source, source_record, source_did, su
   let link = lex?.clients[0]?.notifications;
   appName = lex?.name;
   const sourceRemainder = source.slice(app.length + 1);
-  title = lex?.known_sources[sourceRemainder] ?? source;
+  title = lex?.known_sources[sourceRemainder]?.name ?? source;
 
   let directLink;
   if (subject.startsWith('did:')) {

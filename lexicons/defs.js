@@ -47,17 +47,39 @@ export default {
       },
     ],
     known_sources: {
-      'graph.follow:subject': 'Follow',
-      'graph.verification:subject': 'Verification',
-      'feed.like:subject.uri': 'Like',
-      'feed.like:via.uri': 'Repost like',
-      'feed.post:reply.parent.uri': 'Reply',
-      'feed.post:reply.root.uri': 'Reply in thread',
-      'feed.post:embed.record.uri': 'Quote',
-      'feed.post:embed.record.record.uri': 'Quote', // with media
-      'feed.post:facets[app.bsky.richtext.facet].features[app.bsky.richtext.facet#mention].did': 'Mention',
-      'feed.repost:subject.uri': 'Repost',
-      'feed.repost:via.uri': 'Repost repost',
+      'graph.follow:subject': {
+        name: 'Follow',
+      },
+      'graph.verification:subject': {
+        name: 'Verification',
+      },
+      'feed.like:subject.uri': {
+        name: 'Like',
+      },
+      'feed.like:via.uri': {
+        name: 'Repost like',
+      },
+      'feed.post:reply.parent.uri': {
+        name: 'Reply',
+      },
+      'feed.post:reply.root.uri': {
+        name: 'Reply in thread',
+      },
+      'feed.post:embed.record.uri': {
+        name: 'Quote',
+      },
+      'feed.post:embed.record.record.uri': {
+        name: 'Quote', // with media
+      },
+      'feed.post:facets[app.bsky.richtext.facet].features[app.bsky.richtext.facet#mention].did': {
+        name: 'Mention',
+      },
+      'feed.repost:subject.uri': {
+        name: 'Repost',
+      },
+      'feed.repost:via.uri': {
+        name: 'Repost repost',
+      },
     },
     torment_sources: {
       'graph.block:subject': null,
@@ -81,7 +103,9 @@ export default {
       }
     ],
     known_sources: {
-      'graph.subscription:publication': 'Subscription',
+      'graph.subscription:publication': {
+        name: 'Subscription',
+      },
     },
   },
   'sh.tangled': {
@@ -98,19 +122,45 @@ export default {
       }
     ],
     known_sources: {
-      'feed.star:subject': 'Star',
-      'feed.reaction:subject': 'Reaction',
-      'graph.follow:subject': 'Follow',
-      'actor.profile:pinnedRepositories[]': 'Pinned repo',
-      'repo.issue.comment:issue': 'Issue comment',
-      'repo.issue.comment:owner': 'Issue comment',
-      'repo.issue.comment:repo': 'Issue comment',
-      'repo.pull:targetRepo': 'Pull',
-      'repo.pull.comment:owner': 'Pull comment',
-      'repo.pull.comment:pull': 'Pull comment',
-      'repo.pull.comment:repo': 'Pull comment',
-      'knot.member:subject': 'Knot member',
-      'spindle.member:subject': 'Spindle member',
+      'feed.star:subject': {
+        name: 'Star',
+      },
+      'feed.reaction:subject': {
+        name: 'Reaction',
+      },
+      'graph.follow:subject': {
+        name: 'Follow',
+      },
+      'actor.profile:pinnedRepositories[]': {
+        name: 'Pinned repo',
+      },
+      'repo.issue.comment:issue': {
+        name: 'Issue comment',
+      },
+      'repo.issue.comment:owner': {
+        name: 'Issue comment',
+      },
+      'repo.issue.comment:repo': {
+        name: 'Issue comment',
+      },
+      'repo.pull:targetRepo': {
+        name: 'Pull',
+      },
+      'repo.pull.comment:owner': {
+        name: 'Pull comment',
+      },
+      'repo.pull.comment:pull': {
+        name: 'Pull comment',
+      },
+      'repo.pull.comment:repo': {
+        name: 'Pull comment',
+      },
+      'knot.member:subject': {
+        name: 'Knot member',
+      },
+      'spindle.member:subject': {
+        name: 'Spindle member',
+      },
     },
   },
   'com.shinolabs': { // TODO: this app isn't exactly tld+1
@@ -124,7 +174,9 @@ export default {
       },
     ],
     known_sources: {
-      'pinksea.oekaki:inResponseTo.uri': 'Response',
+      'pinksea.oekaki:inResponseTo.uri': {
+        name: 'Response',
+      },
     },
   },
   'place.stream': {
@@ -138,8 +190,12 @@ export default {
       },
     ],
     known_sources: {
-      'chat.message:streamer': 'Message',
-      'key:signingKey': 'Signing key',
+      'chat.message:streamer': {
+        name: 'Message',
+      },
+      'key:signingKey': {
+        name: 'Signing key',
+      },
     },
   },
   'so.sprk': {
@@ -153,13 +209,25 @@ export default {
       },
     ],
     known_sources: {
-      'feed.like:subject.uri': 'Like',
+      'feed.like:subject.uri': {
+        name: 'Like',
+      },
       // it's not actually clear to me if *all* the bsky sources were copied for sprk posts or not
-      'feed.post:reply.parent.uri': 'Reply',
-      'feed.post:reply.root.uri': 'Reply in thread',
-      'feed.post:embed.record.uri': 'Quote',
-      'feed.post:embed.record.record.uri': 'Quote', // with media
-      'feed.post:facets[app.bsky.richtext.facet].features[app.bsky.richtext.facet#mention].did': 'Mention',
+      'feed.post:reply.parent.uri': {
+        name: 'Reply',
+      },
+      'feed.post:reply.root.uri': {
+        name: 'Reply in thread',
+      },
+      'feed.post:embed.record.uri': {
+        name: 'Quote',
+      },
+      'feed.post:embed.record.record.uri': {
+        name: 'Quote', // with media
+      },
+      'feed.post:facets[app.bsky.richtext.facet].features[app.bsky.richtext.facet#mention].did': {
+        name: 'Mention',
+      },
     },
   },
   'events.smokesignal': {
@@ -173,7 +241,9 @@ export default {
       },
     ],
     known_sources: {
-      'calendar.rsvp:subject.uri': 'RSVP',
+      'calendar.rsvp:subject.uri': {
+        name: 'RSVP',
+      },
     },
   },
   'app.popsky': {
@@ -187,8 +257,12 @@ export default {
       },
     ],
     known_sources: {
-      'like:subjectUri': 'Like',
-      'comment:subjectUri': 'Comment',
+      'like:subjectUri': {
+        name: 'Like',
+      },
+      'comment:subjectUri': {
+        name: 'Comment',
+      },
     },
   },
 };
