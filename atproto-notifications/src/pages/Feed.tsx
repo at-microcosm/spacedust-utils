@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import Popup from 'reactjs-popup';
 import { getNotifications, getSecondary } from '../db';
 import { ButtonGroup } from '../components/Buttons';
 import { NotificationSettings } from '../components/NotificationSettings';
-import { Notification } from '../components/Notification';
+import { Notification, fallbackRender } from '../components/Notification';
 import { GetJson, PostJson } from '../components/Fetch';
 import psl from 'psl';
 import lexicons from 'lexicons';
@@ -232,7 +233,9 @@ export function Feed() {
 
       <div className="feed-notifications">
         {feed.map(([k, n]) => (
-          <Notification key={k} {...n} />
+          <ErrorBoundary key={k} fallbackRender={fallbackRender}>
+            <Notification {...n} />
+          </ErrorBoundary>
         ))}
       </div>
     </div>

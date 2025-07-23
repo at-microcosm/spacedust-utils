@@ -7,6 +7,16 @@ import { Fetch } from './Fetch';
 
 import './Notification.css';
 
+export function fallbackRender({ error, resetErrorBoundary }) {
+  console.error('rendering fallback for error', error);
+  return (
+    <div className="notification error">
+      <p>sorry, something went wrong trying to show this notification</p>
+      <p><button onClick={resetErrorBoundary}>retry</button></p>
+    </div>
+  );
+}
+
 export function Notification({ app, group, source, source_record, source_did, subject, timestamp }) {
   const [resolvedLink, setResolvedLink] = useState(null);
 
