@@ -1,12 +1,21 @@
+import { useState, useEffect } from 'react';
 import ReactTimeAgo from 'react-time-ago';
 import psl from 'psl';
-import lexicons from 'lexicons';
+import { default as lexicons, getLink } from 'lexicons';
 import { resolveDid } from '../atproto/resolve';
 import { Fetch } from './Fetch';
 
 import './Notification.css';
 
 export function Notification({ app, group, source, source_record, source_did, subject, timestamp }) {
+  const [resolvedLink, setResolvedLink] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const link = await getLink(source, source_record, subject);
+      if (link) setResolvedLink(link);
+    })();
+  }, [source, source_record, subject]);
 
   // TODO: clean up / move this to lexicons package?
   let title = source;
@@ -48,7 +57,7 @@ export function Notification({ app, group, source, source_record, source_did, su
 
     directLink = lex
       ?.clients[0]
-      ?.direct_links[`at_uri:${sourceRemainder}`]
+      ?.direct_links?.[`at_uri:${sourceRemainder}`]
       ?.replace('{subject.did}', did)
       ?.replace('{subject.collection}', collection)
       ?.replace('{subject.rkey}', rest.join('/') || null)
@@ -56,7 +65,7 @@ export function Notification({ app, group, source, source_record, source_did, su
       ?.replace('{source_record.collection}', sCollection)
       ?.replace('{source_record.rkey}', sRest.join('/') || null);
   }
-  link = directLink ?? link;
+  link = resolvedLink ?? directLink ?? link;
 
   const contents = (
     <>

@@ -92,6 +92,9 @@ export default {
         canonical: true,
         icon: '/icons/sh.tangled.jpg',
         main: 'https://tangled.sh',
+        direct_links: {
+          'at_uri:feed.star:subject': 'https://tangled.sh/{subject.did}/{@subject:name}',
+        },
       }
     ],
     known_sources: {
