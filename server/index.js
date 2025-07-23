@@ -3,6 +3,7 @@
 import { createRemoteJWKSet } from 'jose';
 import fs from 'node:fs';
 import { randomBytes } from 'node:crypto';
+import https from 'node:https';
 import webpush from 'web-push';
 import { DB } from './db.js';
 import { connectSpacedust } from './notifications.js';
@@ -24,6 +25,22 @@ const getOrCreateSecrets = filename => {
   }
   console.log(`Keys ready with webpush pubkey: ${secrets.pushKeys.publicKey}`);
   return secrets;
+}
+
+function startHealthcheckPing(endpoint) {
+  const next = () => setTimeout(() => startHealthcheckPing(endpoint), 90 * 1000);
+
+  https
+    .get(endpoint, res => {
+      if (res.statusCode !== 200) console.warn('non-200 health check response', res.statusCode);
+      res
+        .on('data', () => {})
+        .on('end', next);
+    })
+    .on('error', err => {
+      console.warn('healthcheck request errored', err);
+      next();
+    });
 }
 
 const main = env => {
@@ -53,6 +70,9 @@ const main = env => {
   const port = parseInt(env.PORT ?? 8000, 10);
 
   const allowedOrigin = env.ALLOWED_ORIGIN ?? 'http://127.0.0.1:5173';
+
+  if (env.HEALTHCHECK) startHealthcheckPing(env.HEALTHCHECK);
+  else console.warn('no HEALTHCHECK in env, not sending healthcheck pings');
 
   server(secrets, jwks, allowedOrigin, whoamiHost, db, updateSubs, push, adminDid).listen(
     port,
