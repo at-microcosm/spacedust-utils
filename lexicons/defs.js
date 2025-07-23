@@ -55,6 +55,7 @@ export default {
       },
       'feed.like:subject.uri': {
         name: 'Like',
+        context: ['@subject:text'],
       },
       'feed.like:via.uri': {
         name: 'Repost like',
@@ -118,12 +119,14 @@ export default {
         main: 'https://tangled.sh',
         direct_links: {
           'at_uri:feed.star:subject': 'https://tangled.sh/{subject.did}/{@subject:name}',
+          'did:graph.follow:subject': 'https://tangled.sh/{source_record.did}',
         },
       }
     ],
     known_sources: {
       'feed.star:subject': {
         name: 'Star',
+        context: ['@subject:name'],
       },
       'feed.reaction:subject': {
         name: 'Reaction',

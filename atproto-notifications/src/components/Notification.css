@@ -7,6 +7,7 @@
   box-sizing: border-box;
   display: flex;
   justify-content: space-between;
+  gap: 0.5rem;
 }
 a.notification {
   font: inherit;
@@ -30,8 +31,20 @@ a.notification:hover {
   margin: 0;
 }
 
+.notification-info {
+  display: flex;
+  align-items: baseline;
+}
+
 .handle {
   color: skyblue;
+}
+
+.notification-context {
+  font-size: 0.8rem;
+  opacity: 0.667;
+  margin: 0.25rem 0 0;
+  max-width: 48em;
 }
 
 .notification-when {
