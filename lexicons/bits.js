@@ -19,9 +19,6 @@ function getAppDefs(source) {
   return [appSource, defs[appPrefix]];
 }
 
-export async function getContext(source, source_record, subject) {
-}
-
 const uriBits = async uri => {
   const bits = uri.slice('at://'.length).split('/');
   // TODO: identifier might be a handle
@@ -70,7 +67,7 @@ export async function getLink(source, source_record, subject) {
         const sub = JSONPath({
           path: `$.${match.groups.path}`,
           json: subjectRecord,
-        })[0];
+        })[0]; // TODO: array result?
 
         link = link.replaceAll(match[0], sub);
       }
@@ -79,4 +76,31 @@ export async function getLink(source, source_record, subject) {
 
   // 2.b TODO: source record lookups if needed
   return link;
+}
+
+export async function getContext(source, source_record, subject) {
+  const [appSource, appDefs] = getAppDefs(source);
+  const contexts = appDefs?.known_sources?.[appSource]?.context ?? [];
+  const linkType = subject.startsWith('did:') ? 'did' : 'at_uri';
+
+  let loaded = [];
+  for (const ctx of contexts) {
+    const [o, ...pathstuff] = ctx.split(':');
+    if (o !== '@subject') {
+      throw new Error('only @subject is implemented for context loading so far');
+    }
+    if (linkType !== 'at_uri') {
+      throw new Error('only at_uris can be used for @subject loading so far');
+    }
+    const path = pathstuff.join(':');
+    const subjectRecord = await getAtUri(subject);
+    // using json path is temporary -- need recordpath convention defined
+    const found = JSONPath({
+      path,
+      json: subjectRecord,
+    });
+    loaded = loaded.concat(found); // TODO: think about array handling
+  }
+
+  return loaded;
 }

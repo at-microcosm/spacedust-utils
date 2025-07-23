@@ -37,7 +37,7 @@ async function handlePush(ev) {
   // TODO: user pref for alt client -> prefer that client's icon
   const lex = lexicons[appPrefix];
   const icon = lex?.clients[0]?.icon;
-  const title = lex?.known_sources[source.slice(app.length + 1)] ?? source;
+  const title = lex?.known_sources[source.slice(app.length + 1)]?.name ?? source;
   const body = `from @${handle} on ${lex?.name ?? app}`;
 
   // const tag = 'simple-push-demo-notification-tag';

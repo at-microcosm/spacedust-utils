@@ -123,7 +123,7 @@ function SecondaryFilter({ inc, secondary, current, onUpdate }) {
           const lex = lexicons[appPrefix];
           icon = lex?.clients[0]?.icon;
           appName = lex?.name;
-          title = lex?.known_sources[k.slice(app.length + 1)] ?? k;
+          title = lex?.known_sources[k.slice(app.length + 1)]?.name ?? k;
 
         } else if (secondary === 'group') {
 

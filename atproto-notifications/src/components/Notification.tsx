@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import ReactTimeAgo from 'react-time-ago';
 import psl from 'psl';
-import { default as lexicons, getLink } from 'lexicons';
+import { default as lexicons, getLink, getContext } from 'lexicons';
 import { resolveDid } from '../atproto/resolve';
 import { Fetch } from './Fetch';
 
@@ -19,11 +19,16 @@ export function fallbackRender({ error, resetErrorBoundary }) {
 
 export function Notification({ app, group, source, source_record, source_did, subject, timestamp }) {
   const [resolvedLink, setResolvedLink] = useState(null);
+  const [resolvedContext, setResolvedContext] = useState([]);
 
   useEffect(() => {
     (async () => {
       const link = await getLink(source, source_record, subject);
       if (link) setResolvedLink(link);
+    })();
+    (async() => {
+      const context = await getContext(source, source_record, subject);
+      setResolvedContext(context);
     })();
   }, [source, source_record, subject]);
 
@@ -42,7 +47,7 @@ export function Notification({ app, group, source, source_record, source_did, su
   let link = lex?.clients[0]?.notifications;
   appName = lex?.name;
   const sourceRemainder = source.slice(app.length + 1);
-  title = lex?.known_sources[sourceRemainder] ?? source;
+  title = lex?.known_sources[sourceRemainder]?.name ?? source;
 
   let directLink;
   if (subject.startsWith('did:')) {
@@ -77,23 +82,33 @@ export function Notification({ app, group, source, source_record, source_did, su
   }
   link = resolvedLink ?? directLink ?? link;
 
+  let contextClipped = resolvedContext.join(' ');
+  if (contextClipped.length > 240) {
+    contextClipped = contextClipped.slice(0, 239) + '…';
+  }
+
   const contents = (
     <>
       <div className="notification-info">
         {icon && (
           <img className="app-icon" src={icon} title={appName ?? app} alt="" />
         )}
-        {title} from
-        {' '}
-        {source_did ? (
-          <Fetch
-            using={resolveDid}
-            args={[source_did]}
-            ok={handle => <span className="handle">@{handle}</span>}
-          />
-        ) : (
-          source_record
-        )}
+        <div>
+          {title} from
+          {' '}
+          {source_did ? (
+            <Fetch
+              using={resolveDid}
+              args={[source_did]}
+              ok={handle => <span className="handle">@{handle}</span>}
+            />
+          ) : (
+            source_record
+          )}
+          {contextClipped.length > 0 && (
+            <p className="notification-context">{contextClipped}</p>
+          )}
+        </div>
       </div>
       {timestamp && (
         <div className="notification-when">
