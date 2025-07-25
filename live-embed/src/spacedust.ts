@@ -1,3 +1,4 @@
+import linkSources from './linkSources';
 
 type SpacedustStatus = 'disconnected' | 'connecting' | 'connected';
 
@@ -22,13 +23,7 @@ export class Spacedust {
 
   #subjects: string[];
   #subjectsDirty: boolean = false; // in case we try to update while disconnected
-  #sources: string[] = [ // hard-coding for demo
-    "app.bsky.feed.like:subject.uri", // likes
-    "app.bsky.feed.repost:subject.uri", // reposts
-    "app.bsky.feed.post:embed.record.uri", // normal quotes
-    "app.bsky.feed.post:embed.record.record.uri", // RecordWithMedia quotes
-    "app.bsky.feed.post:reply.root.uri", // all child replies
-  ];
+  #sources: string[] = Object.keys(linkSources); // hard-coding for demo
   #eol: boolean = false; // flag: we should shut down
 
   constructor(
