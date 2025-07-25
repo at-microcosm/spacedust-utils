@@ -19,7 +19,6 @@ function App() {
       setCurrentPair(updatedPair);
       spacedust.setSubjects(updatedPair);
       setUpdates(current => { // cleanup, probably should combine with pair directly
-        console.log('hi??');
         const next = {};
         updatedPair.forEach(uri => next[uri] = current[uri] ?? {});
         return next;
@@ -27,19 +26,16 @@ function App() {
     });
 
     function handleLink({ subject, source }) {
-      console.log('i only run once', source, subject);
-
-      setUpdates(current => {
-        console.log('i run twice??', source, subject);
-        const next = Object.assign({}, current);
-        if (!next[subject][source]) next[subject][source] = 0;
-        next[subject][source] += 1;
-        return next;
-      });
+      setUpdates(current => ({
+        ...current,
+        [subject]: {
+          ...current[subject],
+          [source]: (current[subject][source] ?? 0) + 1
+        },
+      }));
     }
 
     return () => {
-      console.log('byeeee');
       cancelRotation();
       spacedust.close();
       iMightBeAZombie = true;
