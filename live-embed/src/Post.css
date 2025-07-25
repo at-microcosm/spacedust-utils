@@ -1,8 +1,11 @@
 .post {
   background-color: rgb(32, 41, 53);
   border: 1px solid rgb(46, 64, 82);
+  border-radius: 0.1em;
   display: flex;
+  flex-basis: 20em;
   flex-direction: column;
+  min-width: 12em;
   max-width: 24em;
 }
 
@@ -30,4 +33,10 @@
 }
 .stat.like:before {
   content: "♡ ";
+}
+
+@media (prefers-color-scheme: light) {
+  .post {
+    background-color: rgb(241, 243, 245);
+  }
 }

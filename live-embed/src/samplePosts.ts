@@ -28,6 +28,7 @@ export function rotatingPair(onRotate: any) {
   let which: 'A' | 'B' = 'A';
 
   async function next() {
+    console.info('[sample posts: next]');
     try {
       const { feed } = await getFeed();
       if (dying) return;

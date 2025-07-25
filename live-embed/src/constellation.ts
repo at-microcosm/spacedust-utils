@@ -16,7 +16,7 @@ export async function getPostStats(
 ) {
   const url = new URL('/links/all', endpoint);
   url.searchParams.set('target', atUri);
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
   if (!res.ok) throw new Error(res);
   const { links } = await res.json();
 
