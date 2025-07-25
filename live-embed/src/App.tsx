@@ -44,10 +44,13 @@ function App() {
 
   return (
     <>
-      <h1>live post interactions</h1>
-      {currentPair.map(p => (
-        <Post key={p} atUri={p} updatedLinks={updates[p]} />
-      ))}
+      <h1>zero bluesky infra post rendering</h1>
+      <p className="with">with live-updating interaction counts</p>
+      <div className="posts">
+        {currentPair.map(p => (
+          <Post key={p} atUri={p} updatedLinks={updates[p]} />
+        ))}
+      </div>
     </>
   )
 }

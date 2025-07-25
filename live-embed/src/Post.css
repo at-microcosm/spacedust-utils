@@ -1,0 +1,33 @@
+.post {
+  background-color: rgb(32, 41, 53);
+  border: 1px solid rgb(46, 64, 82);
+  display: flex;
+  flex-direction: column;
+  max-width: 24em;
+}
+
+.record-contents {
+  flex-grow: 1;
+  padding: 1em;
+  text-align: left;
+  align-content: center;
+}
+
+.stats {
+  border-top: 0.5px solid rgb(46, 64, 82);
+  display: flex;
+  justify-content: space-around;
+  margin: 0;
+  gap: 1em;
+  padding: 0 1em;
+  opacity: 0.667;
+}
+.stat.reply:before {
+  content: "🫧 ";
+}
+.stat.repost:before {
+  content: "♻ ";
+}
+.stat.like:before {
+  content: "♡ ";
+}
