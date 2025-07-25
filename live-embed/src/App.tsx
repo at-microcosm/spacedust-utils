@@ -60,11 +60,13 @@ function App() {
           <li><strong>Interaction updates</strong>: subscribes to <a href="https://spacedust.microcosm.blue/" target="_blank">spacedust</a>.</li>
           <li>There is no backend.</li>
         </ul>
-        <p>The post selection takes a couple top posts from the public bluesky Discover feed so I guess it's kind of cheating but hey.</p>
-        <p>Oh and media files load from Bluesky's CDN so that's also cheating.</p>
+        <p>The post selection takes a couple top posts from the public bluesky Discover feed so I guess it's kind of cheating but hey. And media files load from Bluesky's CDN (or, will soon) so that's also cheating.</p>
 
-        <h2>If you actually want to embed a post</h2>
-        <p>See <a href="https://mary-ext.codeberg.page/bluesky-embed/" target="_blank"><code>&lt;bluesky-embed&gt;</code></a> from <a href="https://mary.my.id" target="_blank">mary</a>. It's a very solid post renderer, unlike this demo.</p>
+        <p>Source code is on <a href="https://tangled.sh/@bad-example.com/spacedust-utils/tree/main/live-embed" target="_blank">tangled</a>. Still a work in progress.</p>
+
+        <h2>PS</h2>
+        <p>If you actually want to embed a post on a web page, check out <a href="https://mary-ext.codeberg.page/bluesky-embed/" target="_blank"><code>&lt;bluesky-embed&gt;</code></a> from <a href="https://mary.my.id" target="_blank">mary</a>. It's a very solid post renderer, unlike this demo.</p>
+
       </div>
 
     </>
